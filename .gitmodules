@@ -1,1 +1,4 @@
+[submodule "github-copilot-agent-skills"]
+	path = github-copilot-agent-skills
+	url = https://github.com/github-copilot/github-copilot-agent-skills.git
 
