@@ -409,7 +409,6 @@
         <p class="page-eyebrow">Enterprise Advisory Tool</p>
         <h1>Azure HA/DR Decision Support Dashboard</h1>
         <p class="page-subtitle">Use this dashboard to compare high availability and disaster recovery approaches across Azure services, SaaS platforms, and dependency contexts. Recommendations are advisory, service-aware, and should be validated against workload-specific architecture, region support, and operational constraints before sign-off.</p>
-        <div class="advisory-banner">This experience preserves the current live catalog, including legacy and dependency-oriented options. When recommendation coverage is partial or indirect, the dashboard now shows that explicitly instead of overstating confidence.</div>
     </div>
     <div id="error-banner" class="error-banner"></div>
     <div class="dashboard-grid">
@@ -1401,6 +1400,31 @@
                     outputs.technicalReasoning.textContent = rec['Why This Fits'] || 'N/A';
 
                     const refLink = rec['Primary Diagram Link'];
+                    const service = (rec['Azure Service'] || '').toLowerCase();
+                    // Azure AI Search (Cognitive Search) custom logic
+                    if (service.includes('ai search') || service.includes('cognitive search')) {
+                        outputs.architectureReferences.innerHTML = `
+<a href="https://learn.microsoft.com/azure/architecture/example-scenario/ai/azure-search-ai-solution" target="_blank">Azure AI Search: Scalable Search Solution (Reference Architecture)</a><br>
+<span>Common Patterns: Web App/API → Azure AI Search (index/query), Data Ingestion via Data Factory/Logic Apps/Functions, Storage via Blob Storage or Cosmos DB, Security via Azure AD/Managed Identities/Private Endpoints</span>
+`;
+                        outputs.bestPracticeLinks.innerHTML = `
+<ul>
+  <li><a href="https://learn.microsoft.com/azure/search/search-best-practices" target="_blank">Azure AI Search Best Practices</a></li>
+  <li><a href="https://learn.microsoft.com/azure/search/search-security-overview" target="_blank">Security Best Practices</a></li>
+  <li><a href="https://learn.microsoft.com/azure/search/search-performance-optimization" target="_blank">Performance and Scalability Guidance</a></li>
+  <li><a href="https://learn.microsoft.com/azure/search/search-ha-dr" target="_blank">High Availability and Disaster Recovery</a></li>
+</ul>
+`;
+                        setScorecardValue(
+                            scorecards.cost,
+                            'Varies',
+                            `Typical: Basic ~$100/mo (dev/test), Standard $250–$1,000+/mo (prod, 2+ replicas/partitions). <a href="https://azure.microsoft.com/pricing/details/search/" target="_blank">Full pricing</a>.<br>Cost tips: Right-size partitions/replicas, use reserved capacity, monitor usage.`,
+                            scorecards.costNote
+                        );
+                        // Optionally, add operational guidance or other fields here
+                        return;
+                    }
+
                     if (refLink && refLink.startsWith('http')) {
                         outputs.architectureReferences.innerHTML = `<a href="${refLink}" target="_blank">${refLink}</a>`;
                     } else {
@@ -1408,7 +1432,6 @@
                     }
 
                     // Service-specific best practices and links
-                    const service = (rec['Azure Service'] || '').toLowerCase();
                     let bestPracticeHtml = '';
                     let opGuidance = rec['Operational Prerequisites'] || '';
                     if (service.includes('sql database') && !service.includes('managed instance')) {

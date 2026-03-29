@@ -41,7 +41,38 @@ Install dependencies with:
 python -m pip install -r requirements.txt
 ```
 
-## Notes
+## Automated UI Validation
 
-- The workbook is generated from CSV sources so the dashboard logic remains reviewable and traceable.
-- The current scaffold contains headers, starter guidance, and placeholders only. It does not contain researched Microsoft content yet.
+This project includes a Playwright-based automated test script to validate the dashboard UI, dropdown population, dynamic recommendations, and edge case handling.
+
+### How to Run the Automated Test
+
+1. Ensure Node.js and Playwright are installed:
+  ```powershell
+  npm install playwright
+  ```
+2. Start a local web server in the project root (e.g., with Python):
+  ```powershell
+  python -m http.server 8000
+  ```
+3. In another terminal, run the validation script:
+  ```powershell
+  node playwright-dashboard-validation.js
+  ```
+4. The script will print validation results for all dropdowns, dynamic recommendations, and edge cases. It will also report any console errors.
+
+### What the Script Validates
+- All dropdowns are populated with correct options
+- Dynamic selection and recommendations for every Azure service
+- Edge cases: all placeholders, rapid selection
+- No console errors during any test
+
+## Extending & CI Integration
+
+- To add more test cases, edit `playwright-dashboard-validation.js`.
+- For CI/CD, add the script to your pipeline to ensure UI integrity on every change.
+
+## Deployment & Sharing
+
+- To deploy or share, provide the project folder and these instructions.
+- For production, consider containerizing the app or hosting on Azure Static Web Apps.
