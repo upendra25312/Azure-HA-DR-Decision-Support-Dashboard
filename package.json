@@ -1,0 +1,19 @@
+{
+  "name": "azure-ha-dr",
+  "version": "1.0.0",
+  "description": "This project bootstraps an Excel-first research and decision-support solution for Azure high availability (HA) and disaster recovery (DR) strategy by service and RTO/RPO target.",
+  "main": "playwright-dashboard.spec.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}
