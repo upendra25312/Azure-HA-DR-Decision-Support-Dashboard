@@ -1,5 +1,5 @@
 import { loadAuthState, hasRole } from "./auth.mjs";
-import { buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
+import { buildCsvExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
 import {
     FAMILY_BLURBS,
     MATURITY_CONFIG,
@@ -16,7 +16,6 @@ import {
     PRODUCT,
     REPORTING_RULES,
     REQUIRES_GOVERNED_MODE,
-    ROADMAP_PHASES,
     WHAT_WORKS_NOW
 } from "./data/siteContent.mjs";
 import {
@@ -39,11 +38,13 @@ const ROUTES = [
     { path: "/explorer", title: "Explorer", mode: "public" },
     { path: "/services", title: "Services", mode: "public" },
     { path: "/method", title: "Method", mode: "public" },
-    { path: "/roadmap", title: "Roadmap", mode: "public" },
     { path: "/workspace", title: "Review Workspace", mode: "governed" },
     { path: "/reports", title: "Reports", mode: "governed" },
     { path: "/admin", title: "Admin", mode: "governed" }
 ];
+const LEGACY_ROUTE_REDIRECTS = {
+    "/roadmap": "/method"
+};
 
 const GOVERNED_ROUTE_RULES = {
     "/workspace": ["authenticated"],
@@ -113,7 +114,7 @@ async function loadCatalogData() {
         ]);
 
         if (!researchResponse.ok || !sourceResponse.ok) {
-            throw new Error("The public demo data could not be loaded.");
+            throw new Error("The review catalog could not be loaded.");
         }
 
         const researchRows = parseCSV(await researchResponse.text());
@@ -122,7 +123,7 @@ async function loadCatalogData() {
 
         return { items, sourceRows };
     } catch (error) {
-        return { error: "The public demo data could not be loaded. Verify that the CSV files are available in this deployment." };
+        return { error: "The review catalog could not be loaded. Verify that the CSV files are available in this deployment." };
     }
 }
 
@@ -240,6 +241,13 @@ function buildReferences(row, sourceEntries) {
 
 function render() {
     const route = currentRoute();
+
+    if (route.redirectTo) {
+        window.history.replaceState({}, "", route.redirectTo);
+        render();
+        return;
+    }
+
     document.title = route.title ? `${route.title} | ${PRODUCT.name}` : PRODUCT.name;
 
     app.innerHTML = `
@@ -290,8 +298,6 @@ function renderPage(route) {
         return renderServicesPage();
     case "/method":
         return renderMethodPage();
-    case "/roadmap":
-        return renderRoadmapPage();
     case "/workspace":
         return renderGovernedWorkspacePage();
     case "/reports":
@@ -309,7 +315,7 @@ function renderTopbar(route) {
             <div class="brand">
                 <div class="brand-mark" aria-hidden="true">AR</div>
                 <div>
-                    <span class="brand-kicker">Public Demo</span>
+                    <span class="brand-kicker">Architecture Review</span>
                     <span class="brand-name">${escapeHtml(PRODUCT.name)}</span>
                 </div>
             </div>
@@ -337,7 +343,7 @@ function renderHomePage() {
     return `
         <main id="main" class="page">
             <section class="page-hero">
-                <p class="eyebrow">Public demo</p>
+                <p class="eyebrow">Decision Support</p>
                 <div class="hero-grid">
                     <div class="kpi-stack">
                         <h1 class="hero-title">${escapeHtml(PRODUCT.heroTitle)}</h1>
@@ -369,7 +375,7 @@ function renderHomePage() {
                     </div>
                 </div>
                 <div class="metrics-grid">
-                    ${renderMetricCard("Source-backed services", metrics.totalItems, "Public demo items with named documentation references and review dates.")}
+                    ${renderMetricCard("Source-backed services", metrics.totalItems, "Review items with named documentation references and review dates.")}
                     ${renderMetricCard("GA-ready baseline", metrics.gaReady, "Included by default when a sample export is generated.")}
                     ${renderMetricCard("Advisory items", metrics.advisory, "Visible for review, but excluded from default export without override.")}
                     ${renderMetricCard("Preview watchlist", metrics.preview, "Visible for discovery only and never part of the default baseline.")}
@@ -381,7 +387,7 @@ function renderHomePage() {
                     <div>
                         <p class="eyebrow">Trust and value</p>
                         <h2 class="section-title">A public product with one clear job.</h2>
-                        <p class="section-copy">The homepage leads to exploration first. Enterprise workflow stays on the governed side and never gets implied by the public demo.</p>
+                        <p class="section-copy">The homepage leads to exploration first. Enterprise workflow stays on the governed side and never gets implied by the review surface.</p>
                     </div>
                 </div>
                 <div class="card-grid">
@@ -435,7 +441,7 @@ function renderHomePage() {
                 <div class="section-header">
                     <div>
                         <p class="eyebrow">Method and traceability</p>
-                        <h2 class="section-title">Short method. Clear boundaries. No roadmap leakage in the main flow.</h2>
+                        <h2 class="section-title">Short method. Clear boundaries. No product-state confusion in the main flow.</h2>
                     </div>
                     <button class="button-quiet" data-route="/method">Read the method</button>
                 </div>
@@ -476,14 +482,14 @@ function renderExplorerPage() {
     return `
         <main id="main" class="page">
             <section class="page-hero">
-                <p class="eyebrow">Public demo explorer</p>
+                <p class="eyebrow">Review Catalog</p>
                 <div class="section-header">
                     <div>
                         <h1 class="hero-title">Explore the review catalog by service, maturity, and risk.</h1>
                         <p class="hero-copy">This is the main public action. Browse the service posture, inspect sources, and save local-only notes without implying governed workflow.</p>
                     </div>
                     <div class="pill-row">
-                        <span class="chip public">Public demo</span>
+                        <span class="chip public">Open access</span>
                         <span class="chip ${filteredItems.some((item) => item.maturity === "Preview") ? "preview" : "ga-ready"}">${filteredItems.length} results</span>
                     </div>
                 </div>
@@ -493,13 +499,14 @@ function renderExplorerPage() {
                 <div class="toolbar">
                     <div>
                         <h2 class="section-title">Sample export</h2>
-                        <p class="section-copy">Default export is GA-ready only. Advisory and preview content require explicit inclusion.</p>
+                        <p class="section-copy">Download the current filtered review pack as Markdown or CSV. Default export is GA-ready only. Advisory and preview content require explicit inclusion.</p>
                     </div>
                     <div class="hero-actions">
                         <button class="button-secondary" data-action="toggle-export">
                             ${state.exportPanelOpen ? "Hide export options" : "Show export options"}
                         </button>
-                        <button class="button" data-action="download-export">Download sample export</button>
+                        <button class="button" data-action="download-export" data-export-format="markdown">Download Markdown</button>
+                        <button class="button-secondary" data-action="download-export" data-export-format="csv">Download CSV</button>
                     </div>
                 </div>
                 ${state.exportPanelOpen ? `
@@ -649,27 +656,6 @@ function renderMethodPage() {
     `;
 }
 
-function renderRoadmapPage() {
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Roadmap</p>
-                <h1 class="hero-title">A staged path from clean demo to governed deployment.</h1>
-                <p class="hero-copy">The roadmap is intentionally separated from the main exploration flow so it does not blur today’s capabilities with future controls.</p>
-            </section>
-            <section class="roadmap-grid">
-                ${ROADMAP_PHASES.map((phase) => `
-                    <article class="roadmap-card">
-                        <p class="eyebrow">${escapeHtml(phase.phase)}</p>
-                        <h2 class="section-title">${escapeHtml(phase.title)}</h2>
-                        <p class="section-copy">${escapeHtml(phase.body)}</p>
-                    </article>
-                `).join("")}
-            </section>
-        </main>
-    `;
-}
-
 function renderGovernedWorkspacePage() {
     const accessAllowed = canAccessRoute("/workspace");
 
@@ -677,7 +663,7 @@ function renderGovernedWorkspacePage() {
         <main id="main" class="page">
             <section class="page-hero">
                 <p class="eyebrow">Governed workspace</p>
-                <h1 class="hero-title">Protected review work starts here, not in the public demo.</h1>
+                <h1 class="hero-title">Protected review work starts here, not in the open review surface.</h1>
                 <p class="hero-copy">This route is reserved for an internal deployment with Microsoft Entra ID, protected APIs, and durable review records.</p>
             </section>
             ${accessAllowed ? renderGovernedAuthenticatedShell() : renderGovernedGate("/workspace")}
@@ -693,7 +679,7 @@ function renderReportsPage() {
             <section class="page-hero">
                 <p class="eyebrow">Reports and exports</p>
                 <h1 class="hero-title">Leadership-ready exports need governed controls.</h1>
-                <p class="hero-copy">Public demo exports are samples. Governed exports record who exported, when they exported, and what maturity mix was included.</p>
+                <p class="hero-copy">Review surface exports are samples. Governed exports record who exported, when they exported, and what maturity mix was included.</p>
             </section>
             ${accessAllowed ? `
                 <section class="governed-grid">
@@ -814,13 +800,12 @@ function renderFooter() {
     return `
         <footer class="footer">
             <p class="footer-note">
-                Public Demo: open exploration, source traceability, and local-only notes.
+                Review Surface: open exploration, source traceability, and local-only notes.
                 Governed Workspace: protected internal deployment with Microsoft Entra ID, durable records, and audit-friendly export behavior.
             </p>
             <div class="footer-links">
                 <button class="button-quiet" data-route="/explorer">Explorer</button>
                 <button class="button-quiet" data-route="/method">Method</button>
-                <button class="button-quiet" data-route="/roadmap">Roadmap</button>
             </div>
         </footer>
     `;
@@ -984,6 +969,12 @@ function renderDetailPanel(item) {
 
 function currentRoute() {
     const pathname = normalizePath(window.location.pathname);
+    const redirectTo = LEGACY_ROUTE_REDIRECTS[pathname];
+
+    if (redirectTo) {
+        return { path: pathname, title: "", mode: "public", redirectTo };
+    }
+
     return ROUTES.find((route) => route.path === pathname) || { path: pathname, title: "Not found", mode: "public" };
 }
 
@@ -1033,7 +1024,7 @@ function handleDocumentClick(event) {
     }
 
     if (action === "download-export") {
-        handleExportDownload();
+        handleExportDownload(actionTarget.getAttribute("data-export-format") || "markdown");
         return;
     }
 
@@ -1216,7 +1207,7 @@ function exportWarningText(options) {
     return "Default sample export remains GA-ready only.";
 }
 
-function handleExportDownload() {
+function handleExportDownload(format = "markdown") {
     const filters = currentExplorerFilters();
     const filteredItems = filterItems(state.items, filters).filter((item) => {
         if (item.maturity === "GA-ready") {
@@ -1239,16 +1230,23 @@ function handleExportDownload() {
         localNote: state.notes[item.id] || ""
     }));
 
-    const markdown = buildMarkdownExport({
+    const exportPayload = {
         productName: PRODUCT.name,
-        modeLabel: "Public Demo",
+        modeLabel: "Review Surface",
         items: selectedItems,
         filters,
         options: state.exportOptions,
         generatedAt: new Date()
-    });
+    };
 
-    downloadTextFile("azure-review-board-sample-export.md", markdown);
+    if (format === "csv") {
+        const csv = buildCsvExport(exportPayload);
+        downloadTextFile("azure-review-board-sample-export.csv", csv, "text/csv;charset=utf-8");
+        return;
+    }
+
+    const markdown = buildMarkdownExport(exportPayload);
+    downloadTextFile("azure-review-board-sample-export.md", markdown, "text/markdown;charset=utf-8");
 }
 
 function hydrateExplorerSelection(route) {

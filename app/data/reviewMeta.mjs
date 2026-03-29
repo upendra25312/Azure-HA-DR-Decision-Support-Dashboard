@@ -139,7 +139,7 @@ export const REVIEW_META = {
         recommendedActions: [
             "Validate application retry behavior against transient Key Vault failures.",
             "Document secret access dependencies in the wider failover runbook.",
-            "Keep break-glass access procedures outside the public demo path."
+            "Keep break-glass access procedures outside the open review surface."
         ]
     },
     "Azure Service Bus": {
@@ -329,7 +329,7 @@ export const REVIEW_META = {
         tags: ["d365", "saas", "tenant-specific", "business application"],
         serviceFamily: "Business Applications",
         category: "Business SaaS",
-        summary: "D365 continuity statements are usually tenant and workload specific. Public demo guidance should stay visible for discovery but not act as a default enterprise baseline.",
+        summary: "D365 continuity statements are usually tenant and workload specific. Review guidance should stay visible for discovery but not act as a default enterprise baseline.",
         guardrail: "Do not generalize business application recovery claims across all D365 implementations.",
         recommendedActions: [
             "Validate product-specific continuity commitments with the service owner.",
@@ -344,7 +344,7 @@ export const REVIEW_META = {
         tags: ["ai services", "service-specific", "regional support", "preview"],
         serviceFamily: "AI / Platform Services",
         category: "AI platform",
-        summary: "Azure AI Services continuity remains service-specific and still requires deliberate regional validation. The public demo should surface it, not overstate it.",
+        summary: "Azure AI Services continuity remains service-specific and still requires deliberate regional validation. The review surface should surface it, not overstate it.",
         guardrail: "Do not treat Azure AI Services as one uniform continuity surface.",
         recommendedActions: [
             "Identify the exact AI service, model, and region set under review.",

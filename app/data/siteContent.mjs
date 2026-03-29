@@ -1,8 +1,8 @@
 export const PRODUCT = {
     name: "Azure Review Board",
-    valueProposition: "Source-backed Azure architecture review guidance with a clear public demo and a governed workspace path.",
+    valueProposition: "Source-backed Azure architecture review guidance with a clear review surface and a governed workspace path.",
     heroTitle: "Azure architecture review that separates exploration from governance.",
-    heroIntro: "Public Demo is open, fast, and source traceable. Governed Workspace is protected, role aware, and designed for evidence, decisions, and audit history.",
+    heroIntro: "The review surface is open, fast, and source traceable. Governed Workspace is protected, role aware, and designed for evidence, decisions, and audit history.",
     primaryCta: {
         label: "Open Public Explorer",
         route: "/explorer"
@@ -11,7 +11,7 @@ export const PRODUCT = {
         label: "See Governed Workspace",
         route: "/workspace"
     },
-    heroSupport: "This deployment is a public demo. Local notes stay in your browser. Governed records require Microsoft Entra ID and protected APIs."
+    heroSupport: "This deployment is an open review surface. Local notes stay in your browser. Governed records require Microsoft Entra ID and protected APIs."
 };
 
 export const HOME_TRUST_CARDS = [
@@ -29,13 +29,13 @@ export const HOME_TRUST_CARDS = [
     },
     {
         title: "Honest boundaries",
-        body: "The public demo does not claim approvals, sign-off, shared notes, or hidden enterprise controls."
+        body: "The review surface does not claim approvals, sign-off, shared notes, or hidden enterprise controls."
     }
 ];
 
 export const MODE_CARDS = [
     {
-        title: "Public Demo",
+        title: "Review Explorer",
         label: "Open access",
         body: "Browse services, filter by maturity and severity, inspect source traceability, and save local-only notes in this browser.",
         actionLabel: "Explore now",
@@ -84,31 +84,8 @@ export const METHOD_SECTIONS = [
     },
     {
         eyebrow: "Public boundary",
-        title: "The public demo stays local and lightweight.",
+        title: "The review surface stays local and lightweight.",
         body: "Public users can explore, filter, and save local notes in their own browser. No shared review records are created in this deployment, and no enterprise workflow is implied."
-    }
-];
-
-export const ROADMAP_PHASES = [
-    {
-        phase: "Phase 1",
-        title: "Clarity and polish",
-        body: "Separate modes in copy, simplify the homepage, make the explorer the primary action, and remove wording that blurs local demo behavior with enterprise workflow."
-    },
-    {
-        phase: "Phase 2",
-        title: "Governance controls",
-        body: "Apply maturity-aware export rules, protected route scaffolding, and explicit warning patterns so governance behavior becomes product logic instead of text."
-    },
-    {
-        phase: "Phase 3",
-        title: "Authenticated workspace",
-        body: "Deploy the governed surface with Microsoft Entra ID, saved sessions, evidence capture, decision records, and export history."
-    },
-    {
-        phase: "Phase 4",
-        title: "Enterprise hardening",
-        body: "Add role lifecycle controls, durable audit trails, retention rules, operational telemetry, and release discipline for enterprise adoption."
     }
 ];
 

@@ -194,7 +194,6 @@ textarea {
 .hero-grid,
 .card-grid,
 .service-grid,
-.roadmap-grid,
 .checklist-grid,
 .detail-grid {
     display: grid;
@@ -251,10 +250,6 @@ textarea {
 
 .service-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.roadmap-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .checklist-grid {
@@ -347,7 +342,6 @@ textarea {
 .trust-card,
 .governed-card,
 .method-card,
-.roadmap-card,
 .stat-card {
     padding: 1.2rem;
     border-radius: var(--radius-md);
@@ -554,7 +548,6 @@ textarea {
     .hero-grid,
     .detail-grid,
     .service-grid,
-    .roadmap-grid,
     .checklist-grid {
         grid-template-columns: 1fr;
     }
