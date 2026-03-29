@@ -1,7 +1,7 @@
 {
   "name": "azure-ha-dr",
   "version": "1.0.0",
-  "description": "This project bootstraps an Excel-first research and decision-support solution for Azure high availability (HA) and disaster recovery (DR) strategy by service and RTO/RPO target.",
+  "description": "Azure Review Board is a static-first Azure architecture review product with a public demo explorer and a governed workspace path for internal deployment.",
   "main": "playwright-dashboard.spec.js",
   "directories": {
     "doc": "docs"

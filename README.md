@@ -1,78 +1,54 @@
-# Azure HA/DR Research Dashboard
+# Azure Review Board
 
-This project bootstraps an Excel-first research and decision-support solution for Azure high availability (HA) and disaster recovery (DR) strategy by service and RTO/RPO target.
+`Azure Review Board` is a static-first Azure architecture review product with two intentional modes:
 
-## Deliverables
+- `Public Demo`: open exploration, source traceability, local-only notes, and sample exports.
+- `Governed Workspace`: protected internal use with Microsoft Entra ID, role-aware routes, and a clear path to saved review records, evidence, and audit history.
 
-- Structured research dataset for Azure services, HA patterns, DR patterns, and Microsoft source evidence
-- RTO/RPO decision matrix for service-pattern selection
-- Excel workbook with an interactive dashboard and source-backed tabs
-- Narrative research report and leadership summary
-- Source register for traceability to Microsoft documentation
+This repository now ships the public demo experience and the governed boundary scaffolding for Azure Static Web Apps.
 
-## Project Structure
+## Current surface
 
-- `data/`
-  - Canonical CSV datasets that drive the workbook and research outputs
-- `docs/`
-  - Narrative report, executive summary, glossary, and assumptions
-- `excel/`
-  - Generated workbook and Excel-oriented notes
-- `scripts/`
-  - Utilities to validate datasets and build the Excel workbook
+- Public homepage with a single primary action into the explorer
+- Service-first explorer with maturity, severity, family, category, and search filters
+- Local-only browser notes for public demo use
+- Sample export flow with GA-only default behavior
+- Governed routes for `/workspace`, `/reports`, and `/admin`
+- Azure Static Web Apps route protection rules in `staticwebapp.config.json`
 
-## Workflow
+## What is not implemented in this repo
 
-1. Populate `data/source_register.csv` with authoritative Microsoft references.
-2. Research each service-pattern combination in `data/research_knowledge_base.csv`.
-3. Derive or curate the recommendations in `data/rto_rpo_decision_matrix.csv`.
-4. Add ranked diagram and architecture references to `data/architecture_references.csv`.
-5. Run `scripts/validate_data.py` to catch missing fields and schema issues.
-6. Run `scripts/build_workbook.py` to generate `excel/Azure-HA-DR-Dashboard.xlsx`.
+- Persistent governed review records
+- Evidence storage and decision history APIs
+- Export history and audit event persistence
+- Admin workflows backed by a live identity and policy service
 
-## Environment
+Those governed capabilities are described in [docs/implementation-package.md](/C:/Azure%20HA%20DR/docs/implementation-package.md).
 
-- Python 3.11+
-- `openpyxl` for workbook generation
+## Run locally
 
-Install dependencies with:
+1. Start a simple static server from the repo root.
+2. Open `http://127.0.0.1:8000/`.
+
+Example:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m http.server 8000
 ```
 
-## Automated UI Validation
+Note: local `http.server` does not emulate Azure Static Web Apps authentication or history-route rewrites. The public demo works locally. Governed route enforcement is fully realized when deployed to Azure Static Web Apps Standard.
 
-This project includes a Playwright-based automated test script to validate the dashboard UI, dropdown population, dynamic recommendations, and edge case handling.
+## Deploy on Azure
 
-### How to Run the Automated Test
+- Host the front-end on Azure Static Web Apps.
+- Use the `Standard` plan for governed mode.
+- Configure Microsoft Entra ID authentication.
+- Add protected APIs and a durable backing store for governed review records.
 
-1. Ensure Node.js and Playwright are installed:
-  ```powershell
-  npm install playwright
-  ```
-2. Start a local web server in the project root (e.g., with Python):
-  ```powershell
-  python -m http.server 8000
-  ```
-3. In another terminal, run the validation script:
-  ```powershell
-  node playwright-dashboard-validation.js
-  ```
-4. The script will print validation results for all dropdowns, dynamic recommendations, and edge cases. It will also report any console errors.
+## Repo layout
 
-### What the Script Validates
-- All dropdowns are populated with correct options
-- Dynamic selection and recommendations for every Azure service
-- Edge cases: all placeholders, rapid selection
-- No console errors during any test
-
-## Extending & CI Integration
-
-- To add more test cases, edit `playwright-dashboard-validation.js`.
-- For CI/CD, add the script to your pipeline to ensure UI integrity on every change.
-
-## Deployment & Sharing
-
-- To deploy or share, provide the project folder and these instructions.
-- For production, consider containerizing the app or hosting on Azure Static Web Apps.
+- `index.html`: static shell
+- `app/`: public demo application, shared content, review metadata, styles, and route logic
+- `data/`: source CSV inputs used by the public demo explorer
+- `docs/implementation-package.md`: product, security, data, API, governance, export, and rollout package
+- `staticwebapp.config.json`: route protection and security headers

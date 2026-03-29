@@ -1,0 +1,74 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/app/*",
+      "/data/*",
+      "/docs/*",
+      "/*.png",
+      "/*.jpg",
+      "/*.svg",
+      "/*.ico",
+      "/*.txt",
+      "/*.json"
+    ]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  },
+  "routes": [
+    {
+      "route": "/workspace*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/reports*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/admin*",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
+      "route": "/api/workspaces*",
+      "allowedRoles": [
+        "reviewer",
+        "architect",
+        "admin"
+      ]
+    },
+    {
+      "route": "/api/exports*",
+      "allowedRoles": [
+        "reviewer",
+        "architect",
+        "admin"
+      ]
+    },
+    {
+      "route": "/api/admin*",
+      "allowedRoles": [
+        "admin"
+      ]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer",
+      "statusCode": 302
+    },
+    "403": {
+      "rewrite": "/index.html",
+      "statusCode": 403
+    }
+  }
+}
