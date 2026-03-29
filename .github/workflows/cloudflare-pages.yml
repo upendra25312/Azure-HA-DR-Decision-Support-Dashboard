@@ -16,5 +16,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: 301d5a25613ce3448be4f304af5719ba
-          projectName: azure-ha-dr-decision-support-dashboard
+          projectName: azhadr
           directory: .
