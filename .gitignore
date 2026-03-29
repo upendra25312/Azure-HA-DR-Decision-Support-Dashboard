@@ -1,3 +1,6 @@
+# Prevent deployment of large files and output artifacts
+not_deployed/
+excel/Azure-HA-DR-Dashboard.xlsx
 # Local .terraform directories
 .terraform/
 
