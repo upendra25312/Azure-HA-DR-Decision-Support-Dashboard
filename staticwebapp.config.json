@@ -21,24 +21,6 @@
   },
   "routes": [
     {
-      "route": "/workspace*",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/reports*",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/admin*",
-      "allowedRoles": [
-        "admin"
-      ]
-    },
-    {
       "route": "/api/workspaces*",
       "allowedRoles": [
         "reviewer",

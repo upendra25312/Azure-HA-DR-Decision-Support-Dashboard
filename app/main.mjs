@@ -1,21 +1,17 @@
-import { loadAuthState, hasRole } from "./auth.mjs";
-import { buildCsvExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
+import { buildCsvExport, buildJsonExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
 import {
     FAMILY_BLURBS,
     MATURITY_CONFIG,
     REVIEW_META,
-    ROLE_DEFINITIONS,
     SEVERITY_CONFIG
 } from "./data/reviewMeta.mjs";
 import {
-    GOVERNED_MODULES,
     HOME_TRUST_CARDS,
     METHOD_SECTIONS,
     MODE_CARDS,
     NOT_SUPPORTED,
     PRODUCT,
-    REPORTING_RULES,
-    REQUIRES_GOVERNED_MODE,
+    WHAT_STAYS_LOCAL,
     WHAT_WORKS_NOW
 } from "./data/siteContent.mjs";
 import {
@@ -33,23 +29,19 @@ import {
 } from "./utils.mjs";
 
 const NOTES_KEY = "azure-review-board:local-notes";
+const WORKSPACE_KEY = "azure-review-board:personal-workspace";
+const DEFAULT_WORKSPACE_NAME = "My review pack";
 const ROUTES = [
     { path: "/", title: "Home", mode: "public" },
     { path: "/explorer", title: "Explorer", mode: "public" },
     { path: "/services", title: "Services", mode: "public" },
     { path: "/method", title: "Method", mode: "public" },
-    { path: "/workspace", title: "Review Workspace", mode: "governed" },
-    { path: "/reports", title: "Reports", mode: "governed" },
-    { path: "/admin", title: "Admin", mode: "governed" }
+    { path: "/workspace", title: "Personal Workspace", mode: "public" }
 ];
 const LEGACY_ROUTE_REDIRECTS = {
-    "/roadmap": "/method"
-};
-
-const GOVERNED_ROUTE_RULES = {
-    "/workspace": ["authenticated"],
-    "/reports": ["authenticated"],
-    "/admin": ["admin"]
+    "/roadmap": "/method",
+    "/admin": "/method",
+    "/reports": "/workspace"
 };
 
 const EXPORT_DEFAULTS = {
@@ -59,7 +51,6 @@ const EXPORT_DEFAULTS = {
 };
 
 const state = {
-    auth: null,
     items: [],
     sources: [],
     families: [],
@@ -69,13 +60,15 @@ const state = {
     error: "",
     exportPanelOpen: false,
     exportOptions: { ...EXPORT_DEFAULTS },
-    notes: loadNotes()
+    notes: loadNotes(),
+    workspace: loadWorkspace()
 };
 
 const app = document.getElementById("app");
 
 document.addEventListener("click", handleDocumentClick);
 document.addEventListener("input", handleDocumentInput);
+document.addEventListener("change", handleDocumentChange);
 window.addEventListener("popstate", render);
 
 bootstrap();
@@ -83,12 +76,7 @@ bootstrap();
 async function bootstrap() {
     render();
 
-    const [auth, dataResult] = await Promise.all([
-        loadAuthState(),
-        loadCatalogData()
-    ]);
-
-    state.auth = auth;
+    const dataResult = await loadCatalogData();
 
     if (dataResult.error) {
         state.loading = false;
@@ -102,6 +90,7 @@ async function bootstrap() {
     state.families = uniqueValues(state.items, "serviceFamily");
     state.services = uniqueValues(state.items, "serviceName");
     state.categories = uniqueValues(state.items, "category");
+    syncNotesIntoItems();
     state.loading = false;
     render();
 }
@@ -268,7 +257,7 @@ function renderPage(route) {
                 <section class="loading-state">
                     <div>
                         <h1 class="hero-title">Loading the public review catalog.</h1>
-                        <p class="hero-copy">Applying source-backed review data, maturity rules, and governed route boundaries.</p>
+                        <p class="hero-copy">Applying source-backed review data, maturity rules, and local workspace state.</p>
                     </div>
                 </section>
             </main>
@@ -299,17 +288,22 @@ function renderPage(route) {
     case "/method":
         return renderMethodPage();
     case "/workspace":
-        return renderGovernedWorkspacePage();
-    case "/reports":
-        return renderReportsPage();
-    case "/admin":
-        return renderAdminPage();
+        return renderPersonalWorkspacePage();
     default:
         return renderNotFoundPage();
     }
 }
 
 function renderTopbar(route) {
+    const navLinks = ROUTES.map((entry) => [
+        "<button",
+        `class="nav-link ${route.path === entry.path ? "is-active" : ""}"`,
+        `data-route="${entry.path}"`,
+        ">",
+        escapeHtml(entry.title),
+        "</button>"
+    ].join(" ")).join("");
+
     return `
         <header class="topbar">
             <div class="brand">
@@ -320,17 +314,7 @@ function renderTopbar(route) {
                 </div>
             </div>
             <nav class="topbar-nav" aria-label="Primary">
-                ${ROUTES.map((entry) => {
-        const locked = entry.mode === "governed" && !canAccessRoute(entry.path);
-        return `
-                        <button
-                            class="nav-link ${route.path === entry.path ? "is-active" : ""} ${locked ? "is-locked" : ""}"
-                            data-route="${entry.path}"
-                        >
-                            ${escapeHtml(entry.title)}
-                        </button>
-                    `;
-    }).join("")}
+                ${navLinks}
             </nav>
         </header>
     `;
@@ -387,7 +371,7 @@ function renderHomePage() {
                     <div>
                         <p class="eyebrow">Trust and value</p>
                         <h2 class="section-title">A public product with one clear job.</h2>
-                        <p class="section-copy">The homepage leads to exploration first. Enterprise workflow stays on the governed side and never gets implied by the review surface.</p>
+                        <p class="section-copy">The homepage leads to exploration first. Personal workspace stays local and never gets presented as shared workflow.</p>
                     </div>
                 </div>
                 <div class="card-grid">
@@ -432,8 +416,8 @@ function renderHomePage() {
                 </div>
                 <div class="checklist-grid">
                     ${renderSimpleCard("Default export", "GA-ready items only. Advisory and preview stay out unless included deliberately.")}
-                    ${renderSimpleCard("Public notes", "Allowed, but stored in the current browser only. No shared review record is created here.")}
-                    ${renderSimpleCard("Governed mode", "Adds Microsoft Entra ID, evidence, decision tracking, audit history, and role-aware access.")}
+                    ${renderSimpleCard("Personal workspace", "Selections, notes, and exports stay in the current browser unless you export them.")}
+                    ${renderSimpleCard("Export options", "Build a readable Markdown pack, a CSV analysis file, or a JSON backup for later import.")}
                 </div>
             </section>
 
@@ -460,12 +444,12 @@ function renderHomePage() {
                 <div class="section-header">
                     <div>
                         <p class="eyebrow">Product boundary</p>
-                        <h2 class="section-title">What works now and where governed deployment begins.</h2>
+                        <h2 class="section-title">What works now and what stays local.</h2>
                     </div>
                 </div>
                 <div class="checklist-grid">
                     ${renderChecklistCard("What works now", WHAT_WORKS_NOW)}
-                    ${renderChecklistCard("What requires governed mode", REQUIRES_GOVERNED_MODE)}
+                    ${renderChecklistCard("What stays local", WHAT_STAYS_LOCAL)}
                     ${renderChecklistCard("What is not supported", NOT_SUPPORTED)}
                 </div>
             </section>
@@ -486,7 +470,7 @@ function renderExplorerPage() {
                 <div class="section-header">
                     <div>
                         <h1 class="hero-title">Explore the review catalog by service, maturity, and risk.</h1>
-                        <p class="hero-copy">This is the main public action. Browse the service posture, inspect sources, and save local-only notes without implying governed workflow.</p>
+                        <p class="hero-copy">This is the main public action. Browse the service posture, inspect sources, save local-only notes, and add items to your personal workspace.</p>
                     </div>
                     <div class="pill-row">
                         <span class="chip public">Open access</span>
@@ -638,7 +622,7 @@ function renderMethodPage() {
             <section class="page-hero">
                 <p class="eyebrow">Method and about</p>
                 <h1 class="hero-title">Precise copy, clear boundaries, and no fake enterprise claims.</h1>
-                <p class="hero-copy">The method page says what works now, what belongs in governed mode, and what the product does not do.</p>
+                <p class="hero-copy">The method page says what works now, what stays local in the browser, and what the product does not do.</p>
             </section>
             <section class="method-grid">
                 ${METHOD_SECTIONS.map((section) => `
@@ -649,136 +633,117 @@ function renderMethodPage() {
                     </article>
                 `).join("")}
                 ${renderChecklistCard("What works now", WHAT_WORKS_NOW)}
-                ${renderChecklistCard("What requires governed mode", REQUIRES_GOVERNED_MODE)}
+                ${renderChecklistCard("What stays local", WHAT_STAYS_LOCAL)}
                 ${renderChecklistCard("What is not supported", NOT_SUPPORTED)}
             </section>
         </main>
     `;
 }
 
-function renderGovernedWorkspacePage() {
-    const accessAllowed = canAccessRoute("/workspace");
+function renderPersonalWorkspacePage() {
+    const items = selectedWorkspaceItems();
+    const summary = workspaceSummary(items);
 
     return `
         <main id="main" class="page">
             <section class="page-hero">
-                <p class="eyebrow">Governed workspace</p>
-                <h1 class="hero-title">Protected review work starts here, not in the open review surface.</h1>
-                <p class="hero-copy">This route is reserved for an internal deployment with Microsoft Entra ID, protected APIs, and durable review records.</p>
-            </section>
-            ${accessAllowed ? renderGovernedAuthenticatedShell() : renderGovernedGate("/workspace")}
-        </main>
-    `;
-}
-
-function renderReportsPage() {
-    const accessAllowed = canAccessRoute("/reports");
-
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Reports and exports</p>
-                <h1 class="hero-title">Leadership-ready exports need governed controls.</h1>
-                <p class="hero-copy">Review surface exports are samples. Governed exports record who exported, when they exported, and what maturity mix was included.</p>
-            </section>
-            ${accessAllowed ? `
-                <section class="governed-grid">
-                    ${REPORTING_RULES.map((rule) => renderSimpleCard("Export rule", rule)).join("")}
-                </section>
-                <section class="panel">
-                    <div class="locked-banner">
-                        Authenticated identity detected: ${escapeHtml(state.auth.displayName)}. Connect the governed API layer to enable report history, export manifests, and audit events.
+                <p class="eyebrow">Personal Workspace</p>
+                <div class="section-header">
+                    <div>
+                        <h1 class="hero-title">Build and export your review pack.</h1>
+                        <p class="hero-copy">Capture notes, keep a shortlist of services, and export a review pack from this browser. No sign-in. No shared records.</p>
                     </div>
-                </section>
-            ` : renderGovernedGate("/reports")}
-        </main>
-    `;
-}
-
-function renderAdminPage() {
-    if (!state.auth?.isAuthenticated) {
-        return `
-            <main id="main" class="page">
-                <section class="page-hero">
-                    <p class="eyebrow">Admin</p>
-                    <h1 class="hero-title">Admin controls stay off the public surface.</h1>
-                    <p class="hero-copy">Role management, source baselines, and policy controls belong to the governed deployment only.</p>
-                </section>
-                ${renderGovernedGate("/admin")}
-            </main>
-        `;
-    }
-
-    if (!hasRole(state.auth, ["admin"])) {
-        return `
-            <main id="main" class="page">
-                <section class="page-hero">
-                    <p class="eyebrow">Admin</p>
-                    <h1 class="hero-title">Admin role required.</h1>
-                    <p class="hero-copy">This route is intentionally protected. Viewer, reviewer, and architect roles should not see admin controls.</p>
-                </section>
-                <section class="panel">
-                    <div class="warning-callout">Authenticated as ${escapeHtml(state.auth.displayName)}, but no admin role was detected in this session.</div>
-                    <div class="governed-grid">
-                        ${ROLE_DEFINITIONS.map((role) => renderSimpleCard(role.title, role.description)).join("")}
+                    <div class="hero-actions">
+                        <button class="button" data-action="workspace-export" data-export-format="markdown">Export Markdown</button>
+                        <button class="button-secondary" data-action="workspace-export" data-export-format="csv">Export CSV</button>
+                        <button class="button-secondary" data-action="workspace-export" data-export-format="json">Export JSON</button>
+                        <button class="button-secondary" data-action="import-workspace">Import JSON</button>
+                        <button class="button-quiet" data-action="clear-workspace">Clear workspace</button>
                     </div>
+                </div>
+                <p class="meta-copy">Your workspace is stored locally in this browser. Export JSON if you want to keep a portable copy of your notes and shortlist.</p>
+            </section>
+
+            <section class="metrics-grid">
+                ${renderMetricCard("Selected items", summary.itemCount, "Services currently included in this review pack.")}
+                ${renderMetricCard("Notes captured", summary.noteCount, "Global notes plus item notes with content in this workspace.")}
+                ${renderMetricCard("Maturity mix", summary.maturityMix, "Visible summary of the selected review posture.")}
+                ${renderMetricCard("Last updated", summary.lastUpdated, "Updated when the shortlist, notes, or workspace details change.")}
+            </section>
+
+            <section class="workspace-shell">
+                <section class="panel">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Selected items</p>
+                            <h2 class="section-title">${items.length ? "Current review pack" : "No items added yet"}</h2>
+                            <p class="section-copy">${items.length ? "Use Explorer to add or remove services as you shape the review pack." : "Start in Explorer and add services to your workspace."}</p>
+                        </div>
+                    </div>
+                    ${items.length ? `
+                        <div class="workspace-item-list">
+                            ${items.map((item) => renderWorkspaceItem(item)).join("")}
+                        </div>
+                    ` : `
+                        <div class="empty-state">
+                            <div>
+                                <h3>No items added yet.</h3>
+                                <p class="section-copy">Start in Explorer and add services to your workspace.</p>
+                                <button class="button" data-route="/explorer">Open Explorer</button>
+                            </div>
+                        </div>
+                    `}
                 </section>
-            </main>
-        `;
-    }
 
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Admin</p>
-                <h1 class="hero-title">Governed administration shell.</h1>
-                <p class="hero-copy">This page exists to show the boundary: admin users manage policy, sources, roles, and export controls in the internal deployment.</p>
+                <aside class="panel workspace-sidebar">
+                    <div class="filter-group">
+                        <label for="workspaceName">Workspace name</label>
+                        <input
+                            id="workspaceName"
+                            class="input"
+                            type="text"
+                            data-workspace-field="name"
+                            value="${escapeHtml(state.workspace.name)}"
+                            placeholder="${DEFAULT_WORKSPACE_NAME}"
+                        >
+                    </div>
+                    <div class="filter-group">
+                        <label for="workspaceNotes">Workspace notes</label>
+                        <textarea
+                            id="workspaceNotes"
+                            class="textarea"
+                            data-workspace-field="globalNotes"
+                            placeholder="Capture the overall scope, assumptions, or leadership context for this review pack."
+                        >${escapeHtml(state.workspace.globalNotes)}</textarea>
+                    </div>
+                    <div class="info-callout">
+                        Exports include your selected items, item notes, workspace notes, and current maturity posture. Use JSON export and import if you want to move this workspace between browsers.
+                    </div>
+                </aside>
             </section>
-            <section class="governed-grid">
-                ${renderSimpleCard("Role assignments", "Manage Viewer, Reviewer, Architect, and Admin role membership through Microsoft Entra ID groups.")}
-                ${renderSimpleCard("Source baseline", "Approve source register changes and review-date expectations before they affect exports.")}
-                ${renderSimpleCard("Export policy", "Decide which maturity states require explicit override and which report templates are available.")}
-                ${renderSimpleCard("Audit retention", "Control retention, legal hold, and audit event forwarding to Log Analytics and SIEM tooling.")}
+
+            <section class="panel">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Item notes</p>
+                        <h2 class="section-title">Service-by-service notes</h2>
+                    </div>
+                </div>
+                ${items.length ? `
+                    <div class="workspace-note-grid">
+                        ${items.map((item) => renderWorkspaceNoteCard(item)).join("")}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <div>
+                            <h3>No item notes to capture yet.</h3>
+                            <p class="section-copy">Add services to your workspace first. Their local notes will appear here for quick editing and export.</p>
+                        </div>
+                    </div>
+                `}
             </section>
+            <input hidden type="file" accept="application/json" data-workspace-import>
         </main>
-    `;
-}
-
-function renderGovernedAuthenticatedShell() {
-    return `
-        <section class="panel">
-            <div class="info-callout">
-                Authenticated as ${escapeHtml(state.auth.displayName)}. This public repository ships the governed shell and route protections, but not a live review-record API.
-            </div>
-        </section>
-        <section class="workspace-grid">
-            ${GOVERNED_MODULES.map((module) => `
-                <article class="governed-card">
-                    <h2 class="section-title">${escapeHtml(module.title)}</h2>
-                    <p class="section-copy">${escapeHtml(module.body)}</p>
-                </article>
-            `).join("")}
-        </section>
-        <section class="panel">
-            <h2 class="section-title">Role model</h2>
-            <div class="governed-grid">
-                ${ROLE_DEFINITIONS.map((role) => renderSimpleCard(role.title, role.description)).join("")}
-            </div>
-        </section>
-    `;
-}
-
-function renderGovernedGate(routePath) {
-    return `
-        <section class="panel">
-            <div class="locked-banner">
-                Governed mode requires Microsoft Entra ID and protected APIs. Public visitors can inspect the boundary, but cannot access shared review records here.
-            </div>
-            <div class="hero-actions">
-                <a class="button" href="/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(routePath)}">Sign in with Microsoft Entra ID</a>
-                <button class="button-secondary" data-route="/method">Review the product boundary</button>
-            </div>
-        </section>
     `;
 }
 
@@ -788,7 +753,7 @@ function renderNotFoundPage() {
             <section class="error-state">
                 <div>
                     <h1 class="hero-title">That route does not exist.</h1>
-                    <p class="hero-copy">Use the public explorer for open review or the governed routes for protected internal work.</p>
+                    <p class="hero-copy">Use Explorer to inspect services or Personal Workspace to build your exported review pack.</p>
                     <button class="button" data-route="/">Return home</button>
                 </div>
             </section>
@@ -801,10 +766,11 @@ function renderFooter() {
         <footer class="footer">
             <p class="footer-note">
                 Review Surface: open exploration, source traceability, and local-only notes.
-                Governed Workspace: protected internal deployment with Microsoft Entra ID, durable records, and audit-friendly export behavior.
+                Personal Workspace: local selection, local notes, and export-ready review packs in this browser.
             </p>
             <div class="footer-links">
                 <button class="button-quiet" data-route="/explorer">Explorer</button>
+                <button class="button-quiet" data-route="/workspace">Personal Workspace</button>
                 <button class="button-quiet" data-route="/method">Method</button>
             </div>
         </footer>
@@ -837,6 +803,43 @@ function renderChecklistCard(title, items) {
             <ul class="copy-list">
                 ${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
             </ul>
+        </article>
+    `;
+}
+
+function renderWorkspaceItem(item) {
+    return `
+        <article class="workspace-item-card">
+            <div>
+                <div class="pill-row">
+                    <span class="chip ${MATURITY_CONFIG[item.maturity].tone}">${escapeHtml(item.maturity)}</span>
+                    <span class="chip ${SEVERITY_CONFIG[item.severity].tone}">${escapeHtml(item.severity)}</span>
+                    <span class="chip public">${escapeHtml(item.serviceFamily)}</span>
+                </div>
+                <h3>${escapeHtml(item.serviceName)}</h3>
+                <p class="section-copy">${escapeHtml(item.summary)}</p>
+            </div>
+            <div class="hero-actions">
+                <button class="button-quiet" data-route="/explorer?service=${encodeURIComponent(item.serviceName)}&item=${encodeURIComponent(item.id)}">Open in explorer</button>
+                <button class="button-secondary" data-action="remove-from-workspace" data-item-id="${escapeHtml(item.id)}">Remove</button>
+            </div>
+        </article>
+    `;
+}
+
+function renderWorkspaceNoteCard(item) {
+    return `
+        <article class="workspace-note-card">
+            <div class="pill-row">
+                <span class="chip ${MATURITY_CONFIG[item.maturity].tone}">${escapeHtml(item.maturity)}</span>
+                <span class="chip ${SEVERITY_CONFIG[item.severity].tone}">${escapeHtml(item.severity)}</span>
+            </div>
+            <h3>${escapeHtml(item.serviceName)}</h3>
+            <textarea
+                class="textarea"
+                data-note-id="${escapeHtml(item.id)}"
+                placeholder="Capture the service-specific note for this review pack."
+            >${escapeHtml(state.notes[item.id] || item.localNote || "")}</textarea>
         </article>
     `;
 }
@@ -909,6 +912,16 @@ function renderDetailPanel(item) {
             </div>
             <h2 class="detail-title">${escapeHtml(item.serviceName)}</h2>
             <p class="section-copy">${escapeHtml(item.summary)}</p>
+            <div class="hero-actions">
+                <button
+                    class="${isInWorkspace(item.id) ? "button-secondary" : "button"}"
+                    data-action="${isInWorkspace(item.id) ? "remove-from-workspace" : "add-to-workspace"}"
+                    data-item-id="${escapeHtml(item.id)}"
+                >
+                    ${isInWorkspace(item.id) ? "Remove from workspace" : "Add to workspace"}
+                </button>
+                <button class="button-quiet" data-route="/workspace">Open workspace</button>
+            </div>
         </div>
 
         <div class="warning-callout">${escapeHtml(MATURITY_CONFIG[item.maturity].warning)}</div>
@@ -956,8 +969,8 @@ function renderDetailPanel(item) {
         </div>
 
         <div class="detail-block">
-            <h3>Local-only demo note</h3>
-            <p class="meta-copy">Stored in this browser only. Governed mode is required for shared notes, evidence, and decision history.</p>
+            <h3>Local note</h3>
+            <p class="meta-copy">Stored in this browser only. Add this service to Personal Workspace if you want the note included in your exported review pack.</p>
             <textarea
                 class="textarea"
                 data-note-id="${escapeHtml(item.id)}"
@@ -984,16 +997,6 @@ function normalizePath(pathname) {
     }
 
     return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-}
-
-function canAccessRoute(path) {
-    const requiredRoles = GOVERNED_ROUTE_RULES[path];
-
-    if (!requiredRoles) {
-        return true;
-    }
-
-    return hasRole(state.auth, requiredRoles);
 }
 
 function handleDocumentClick(event) {
@@ -1038,6 +1041,45 @@ function handleDocumentClick(event) {
         filters.item = actionTarget.getAttribute("data-item-id");
         updateExplorerUrl(filters, false);
         render();
+        return;
+    }
+
+    if (action === "add-to-workspace") {
+        addItemToWorkspace(actionTarget.getAttribute("data-item-id"));
+        render();
+        return;
+    }
+
+    if (action === "remove-from-workspace") {
+        removeItemFromWorkspace(actionTarget.getAttribute("data-item-id"));
+        render();
+        return;
+    }
+
+    if (action === "workspace-export") {
+        handleWorkspaceExport(actionTarget.getAttribute("data-export-format") || "markdown");
+        return;
+    }
+
+    if (action === "import-workspace") {
+        const input = document.querySelector("[data-workspace-import]");
+        if (input) {
+            input.value = "";
+            input.click();
+        }
+        return;
+    }
+
+    if (action === "clear-workspace") {
+        if (!state.workspace.selectedItemIds.length && !cleanValue(state.workspace.globalNotes)) {
+            return;
+        }
+
+        if (window.confirm("Clear the current personal workspace from this browser?")) {
+            state.workspace = defaultWorkspace();
+            saveWorkspace(state.workspace);
+            render();
+        }
     }
 }
 
@@ -1053,12 +1095,20 @@ function handleDocumentInput(event) {
         if (item) {
             item.localNote = target.value;
         }
+
+        touchWorkspace();
         return;
     }
 
     if (target.matches("[data-export-option]")) {
         state.exportOptions[target.getAttribute("data-export-option")] = target.checked;
         render();
+        return;
+    }
+
+    if (target.matches("[data-workspace-field]")) {
+        state.workspace[target.getAttribute("data-workspace-field")] = target.value;
+        touchWorkspace();
         return;
     }
 
@@ -1084,6 +1134,47 @@ function handleDocumentInput(event) {
     filters.item = "";
     updateExplorerUrl(filters, false);
     render();
+}
+
+async function handleDocumentChange(event) {
+    const target = event.target;
+
+    if (!target.matches("[data-workspace-import]") || !target.files?.length) {
+        return;
+    }
+
+    try {
+        const text = await target.files[0].text();
+        const payload = JSON.parse(text);
+        const workspace = payload.workspace || payload;
+        const importedNotes = workspace.itemNotes && typeof workspace.itemNotes === "object" ? workspace.itemNotes : {};
+
+        state.workspace = normalizeWorkspace({
+            name: workspace.name,
+            globalNotes: workspace.globalNotes,
+            selectedItemIds: workspace.selectedItemIds,
+            createdAt: workspace.createdAt,
+            updatedAt: workspace.updatedAt
+        });
+        state.notes = {
+            ...state.notes,
+            ...importedNotes
+        };
+
+        if (workspace.exportOptions && typeof workspace.exportOptions === "object") {
+            state.exportOptions = {
+                ...EXPORT_DEFAULTS,
+                ...workspace.exportOptions
+            };
+        }
+
+        saveWorkspace(state.workspace);
+        saveNotes(state.notes);
+        syncNotesIntoItems();
+        render();
+    } catch (error) {
+        window.alert("The selected file is not a valid Azure Review Board workspace export.");
+    }
 }
 
 function currentExplorerFilters() {
@@ -1207,6 +1298,54 @@ function exportWarningText(options) {
     return "Default sample export remains GA-ready only.";
 }
 
+function selectedWorkspaceItems() {
+    const order = new Map(state.workspace.selectedItemIds.map((id, index) => [id, index]));
+
+    return state.items
+        .filter((item) => order.has(item.id))
+        .sort((left, right) => order.get(left.id) - order.get(right.id))
+        .map((item) => ({
+            ...item,
+            localNote: state.notes[item.id] || item.localNote || ""
+        }));
+}
+
+function isInWorkspace(itemId) {
+    return state.workspace.selectedItemIds.includes(itemId);
+}
+
+function addItemToWorkspace(itemId) {
+    if (!itemId || isInWorkspace(itemId)) {
+        return;
+    }
+
+    state.workspace.selectedItemIds = [...state.workspace.selectedItemIds, itemId];
+    touchWorkspace();
+}
+
+function removeItemFromWorkspace(itemId) {
+    state.workspace.selectedItemIds = state.workspace.selectedItemIds.filter((id) => id !== itemId);
+    touchWorkspace();
+}
+
+function workspaceSummary(items) {
+    const maturityCounts = items.reduce((counts, item) => {
+        counts[item.maturity] = (counts[item.maturity] || 0) + 1;
+        return counts;
+    }, {});
+    const maturityMix = Object.entries(maturityCounts)
+        .map(([maturity, count]) => `${maturity}: ${count}`)
+        .join(" | ") || "No items";
+    const noteCount = items.filter((item) => cleanValue(state.notes[item.id])).length + (cleanValue(state.workspace.globalNotes) ? 1 : 0);
+
+    return {
+        itemCount: items.length,
+        noteCount,
+        maturityMix,
+        lastUpdated: state.workspace.updatedAt ? formatDate(state.workspace.updatedAt) : "Not updated"
+    };
+}
+
 function handleExportDownload(format = "markdown") {
     const filters = currentExplorerFilters();
     const filteredItems = filterItems(state.items, filters).filter((item) => {
@@ -1249,6 +1388,57 @@ function handleExportDownload(format = "markdown") {
     downloadTextFile("azure-review-board-sample-export.md", markdown, "text/markdown;charset=utf-8");
 }
 
+function handleWorkspaceExport(format = "markdown") {
+    const items = selectedWorkspaceItems();
+
+    if (!items.length) {
+        window.alert("Add at least one service to Personal Workspace before exporting.");
+        return;
+    }
+
+    const exportPayload = {
+        productName: PRODUCT.name,
+        modeLabel: "Personal Workspace",
+        items,
+        filters: {
+            workspace: state.workspace.name,
+            source: "Personal Workspace"
+        },
+        options: {
+            ...state.exportOptions,
+            includeNotes: true
+        },
+        generatedAt: new Date(),
+        workspaceName: state.workspace.name,
+        workspaceNotes: state.workspace.globalNotes,
+        workspace: {
+            ...state.workspace,
+            itemNotes: items.reduce((notes, item) => {
+                if (cleanValue(state.notes[item.id])) {
+                    notes[item.id] = state.notes[item.id];
+                }
+                return notes;
+            }, {}),
+            exportOptions: state.exportOptions
+        }
+    };
+
+    if (format === "csv") {
+        const csv = buildCsvExport(exportPayload);
+        downloadTextFile("azure-review-board-workspace.csv", csv, "text/csv;charset=utf-8");
+        return;
+    }
+
+    if (format === "json") {
+        const json = buildJsonExport(exportPayload);
+        downloadTextFile("azure-review-board-workspace.json", json, "application/json;charset=utf-8");
+        return;
+    }
+
+    const markdown = buildMarkdownExport(exportPayload);
+    downloadTextFile("azure-review-board-workspace.md", markdown, "text/markdown;charset=utf-8");
+}
+
 function hydrateExplorerSelection(route) {
     if (route.path !== "/explorer") {
         return;
@@ -1273,4 +1463,55 @@ function loadNotes() {
 
 function saveNotes(notes) {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+}
+
+function defaultWorkspace() {
+    const now = new Date().toISOString();
+    return {
+        name: DEFAULT_WORKSPACE_NAME,
+        globalNotes: "",
+        selectedItemIds: [],
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+function normalizeWorkspace(value = {}) {
+    const fallback = defaultWorkspace();
+
+    return {
+        name: cleanValue(value.name) || fallback.name,
+        globalNotes: value.globalNotes || "",
+        selectedItemIds: Array.isArray(value.selectedItemIds)
+            ? [...new Set(value.selectedItemIds.map((item) => cleanValue(item)).filter(Boolean))]
+            : [],
+        createdAt: cleanValue(value.createdAt) || fallback.createdAt,
+        updatedAt: cleanValue(value.updatedAt) || fallback.updatedAt
+    };
+}
+
+function loadWorkspace() {
+    try {
+        return normalizeWorkspace(JSON.parse(localStorage.getItem(WORKSPACE_KEY) || "{}"));
+    } catch (error) {
+        return defaultWorkspace();
+    }
+}
+
+function saveWorkspace(workspace) {
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify(workspace));
+}
+
+function touchWorkspace() {
+    state.workspace = normalizeWorkspace({
+        ...state.workspace,
+        updatedAt: new Date().toISOString()
+    });
+    saveWorkspace(state.workspace);
+}
+
+function syncNotesIntoItems() {
+    state.items.forEach((item) => {
+        item.localNote = state.notes[item.id] || "";
+    });
 }

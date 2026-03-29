@@ -189,6 +189,9 @@ textarea {
 .field-row,
 .workspace-grid,
 .governed-grid,
+.workspace-shell,
+.workspace-item-list,
+.workspace-note-grid,
 .method-grid,
 .metrics-grid,
 .hero-grid,
@@ -240,6 +243,7 @@ textarea {
 .card-grid,
 .workspace-grid,
 .governed-grid,
+.workspace-note-grid,
 .method-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -341,6 +345,8 @@ textarea {
 .mode-card,
 .trust-card,
 .governed-card,
+.workspace-item-card,
+.workspace-note-card,
 .method-card,
 .stat-card {
     padding: 1.2rem;
@@ -442,6 +448,26 @@ textarea {
 .detail-panel {
     display: grid;
     gap: 1rem;
+}
+
+.workspace-shell {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    align-items: start;
+}
+
+.workspace-sidebar {
+    display: grid;
+    gap: 1rem;
+}
+
+.workspace-item-list {
+    gap: 0.9rem;
+}
+
+.workspace-item-card,
+.workspace-note-card {
+    display: grid;
+    gap: 0.9rem;
 }
 
 .detail-block {
@@ -546,6 +572,7 @@ textarea {
 
 @media (max-width: 1080px) {
     .hero-grid,
+    .workspace-shell,
     .detail-grid,
     .service-grid,
     .checklist-grid {
@@ -582,6 +609,7 @@ textarea {
     .field-row,
     .workspace-grid,
     .governed-grid,
+    .workspace-note-grid,
     .method-grid {
         grid-template-columns: 1fr;
     }

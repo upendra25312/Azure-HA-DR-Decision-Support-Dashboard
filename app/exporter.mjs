@@ -35,7 +35,9 @@ export function buildMarkdownExport({
     items,
     filters,
     options,
-    generatedAt
+    generatedAt,
+    workspaceName = "",
+    workspaceNotes = ""
 }) {
     const mix = maturityMix(items);
     const maturitySummary = Object.entries(mix)
@@ -80,6 +82,7 @@ export function buildMarkdownExport({
         `# ${productName} sample export`,
         "",
         `- Mode: ${modeLabel}`,
+        workspaceName ? `- Workspace: ${workspaceName}` : "",
         `- Generated: ${formatDate(generatedAt.toISOString())}`,
         `- Item count: ${items.length}`,
         `- Maturity mix: ${maturitySummary || "None"}`,
@@ -89,9 +92,14 @@ export function buildMarkdownExport({
         `- Deprecated included: No`,
         "",
         "> Review surface exports are sample outputs. They do not create shared review records or audit events.",
+        workspaceNotes ? [
+            "",
+            "## Workspace notes",
+            workspaceNotes
+        ].join("\n") : "",
         "",
         body
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 }
 
 export function buildCsvExport({
@@ -100,7 +108,9 @@ export function buildCsvExport({
     items,
     filters,
     options,
-    generatedAt
+    generatedAt,
+    workspaceName = "",
+    workspaceNotes = ""
 }) {
     const mix = maturityMix(items);
     const maturitySummary = Object.entries(mix)
@@ -120,6 +130,8 @@ export function buildCsvExport({
     const headers = [
         "productName",
         "mode",
+        "workspaceName",
+        "workspaceNotes",
         "exportedAtUtc",
         "itemCount",
         "maturityMix",
@@ -152,6 +164,8 @@ export function buildCsvExport({
         return [
             productName,
             modeLabel,
+            workspaceName,
+            workspaceNotes,
             generatedAt.toISOString(),
             String(items.length),
             maturitySummary || "None",
@@ -184,6 +198,51 @@ export function buildCsvExport({
         headers.map(csvValue).join(","),
         ...rows.map((row) => row.map(csvValue).join(","))
     ].join("\n");
+}
+
+export function buildJsonExport({
+    productName,
+    modeLabel,
+    items,
+    filters,
+    options,
+    generatedAt,
+    workspace
+}) {
+    const payload = {
+        version: 1,
+        productName,
+        mode: modeLabel,
+        generatedAt: generatedAt.toISOString(),
+        filters,
+        options,
+        workspace: {
+            name: cleanValue(workspace?.name),
+            globalNotes: cleanValue(workspace?.globalNotes),
+            selectedItemIds: Array.isArray(workspace?.selectedItemIds) ? workspace.selectedItemIds : [],
+            createdAt: cleanValue(workspace?.createdAt),
+            updatedAt: cleanValue(workspace?.updatedAt),
+            itemNotes: workspace?.itemNotes || {}
+        },
+        items: items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            serviceName: item.serviceName,
+            serviceFamily: item.serviceFamily,
+            category: item.category,
+            severity: item.severity,
+            maturity: item.maturity,
+            summary: item.summary,
+            guardrail: item.guardrail,
+            lastReviewedDate: item.lastReviewedDate,
+            sourceName: item.sourceName,
+            sourceUrl: item.sourceUrl,
+            sourceLinks: visibleReferences(item),
+            localNote: cleanValue(item.localNote)
+        }))
+    };
+
+    return JSON.stringify(payload, null, 2);
 }
 
 export function downloadTextFile(filename, content, mimeType = "text/plain;charset=utf-8") {

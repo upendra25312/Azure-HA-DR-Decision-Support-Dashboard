@@ -1,17 +1,17 @@
 export const PRODUCT = {
     name: "Azure Review Board",
-    valueProposition: "Source-backed Azure architecture review guidance with a clear review surface and a governed workspace path.",
-    heroTitle: "Azure architecture review that separates exploration from governance.",
-    heroIntro: "The review surface is open, fast, and source traceable. Governed Workspace is protected, role aware, and designed for evidence, decisions, and audit history.",
+    valueProposition: "Source-backed Azure architecture review guidance with a clear review surface and a local personal workspace.",
+    heroTitle: "Azure architecture review that turns findings into a clean review pack.",
+    heroIntro: "The review surface is open, fast, and source traceable. Personal Workspace keeps selected items, notes, and exports in this browser.",
     primaryCta: {
         label: "Open Public Explorer",
         route: "/explorer"
     },
     secondaryCta: {
-        label: "See Governed Workspace",
+        label: "Open Personal Workspace",
         route: "/workspace"
     },
-    heroSupport: "This deployment is an open review surface. Local notes stay in your browser. Governed records require Microsoft Entra ID and protected APIs."
+    heroSupport: "This deployment stores notes, selections, and exports locally in your browser. No sign-in. No shared records."
 };
 
 export const HOME_TRUST_CARDS = [
@@ -20,7 +20,7 @@ export const HOME_TRUST_CARDS = [
         body: "Explore source-backed guidance quickly without implying shared workflow or enterprise persistence."
     },
     {
-        title: "Governance by default",
+        title: "Safe export defaults",
         body: "GA-ready content exports by default. Advisory and preview content require deliberate inclusion."
     },
     {
@@ -42,10 +42,10 @@ export const MODE_CARDS = [
         actionRoute: "/explorer"
     },
     {
-        title: "Governed Workspace",
-        label: "Protected internal use",
-        body: "Authenticate with Microsoft Entra ID, capture evidence, assign owners, track decisions, and audit exports in an internal deployment.",
-        actionLabel: "View boundary",
+        title: "Personal Workspace",
+        label: "Local only",
+        body: "Keep a shortlist of services, capture notes, and export a review pack from this browser without signing in.",
+        actionLabel: "Open workspace",
         actionRoute: "/workspace"
     }
 ];
@@ -53,22 +53,22 @@ export const MODE_CARDS = [
 export const WHAT_WORKS_NOW = [
     "Public service exploration with maturity and severity filters.",
     "Source traceability from Microsoft documentation links and review dates.",
-    "Local-only notes stored in the current browser.",
-    "Sample exports with visible maturity composition and limitations."
+    "Personal workspace notes and shortlisted review items stored in the current browser.",
+    "Markdown, CSV, and JSON exports with visible maturity composition and limitations."
 ];
 
-export const REQUIRES_GOVERNED_MODE = [
-    "Saved review sessions and persistent review records.",
-    "Evidence capture, decision records, owners, and due dates.",
-    "Export history, audit events, and role-based control.",
-    "Protected APIs and Microsoft Entra ID route enforcement."
+export const WHAT_STAYS_LOCAL = [
+    "Workspace selections, notes, and exports stay in the current browser unless you export them.",
+    "JSON export and import preserve your local review pack without creating a server-side record.",
+    "No shared review records, role assignments, or approval workflow are created.",
+    "No audit trail or export history is captured by this deployment."
 ];
 
 export const NOT_SUPPORTED = [
-    "Public write access to shared review records.",
-    "Fake collaboration, fake approvals, or implied enterprise sign-off.",
+    "Shared review records, fake collaboration, or implied enterprise sign-off.",
     "Exports that hide advisory or preview content in the maturity mix.",
-    "Treating deprecated or preview guidance as a default leadership baseline."
+    "Treating deprecated or preview guidance as a default leadership baseline.",
+    "Assuming browser-local notes are durable team records without exporting them."
 ];
 
 export const METHOD_SECTIONS = [
@@ -85,32 +85,6 @@ export const METHOD_SECTIONS = [
     {
         eyebrow: "Public boundary",
         title: "The review surface stays local and lightweight.",
-        body: "Public users can explore, filter, and save local notes in their own browser. No shared review records are created in this deployment, and no enterprise workflow is implied."
+        body: "Public users can explore, filter, save notes, build a personal workspace, and export their review pack. No shared review records are created in this deployment."
     }
-];
-
-export const GOVERNED_MODULES = [
-    {
-        title: "Review workspace",
-        body: "Persistent session record, owner, due date, and decision status."
-    },
-    {
-        title: "Evidence register",
-        body: "Links, attachments, and proof references tied to individual review items."
-    },
-    {
-        title: "Decision log",
-        body: "Approved patterns, exceptions, rationale, and review timestamps."
-    },
-    {
-        title: "Export history",
-        body: "Who exported, when they exported, what maturity mix was included, and which override was used."
-    }
-];
-
-export const REPORTING_RULES = [
-    "GA-ready content is included by default.",
-    "Advisory and preview content require explicit inclusion.",
-    "Deprecated content remains excluded by default and should be isolated when displayed.",
-    "Every report shows the maturity mix, source traceability, and who generated it in governed mode."
 ];
