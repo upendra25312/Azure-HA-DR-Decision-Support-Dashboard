@@ -104,9 +104,19 @@ window.addEventListener("popstate", render);
 bootstrap();
 
 async function bootstrap() {
-    window._spaDebug = [];
-    window._spaDebug.push('bootstrap: start');
-    showDebugMarker('bootstrap: start');
+    // STATIC TEST: Show a message to confirm bootstrap runs
+    const testDiv = document.createElement('div');
+    testDiv.style.background = '#d0ffd0';
+    testDiv.style.color = '#225522';
+    testDiv.style.padding = '16px';
+    testDiv.style.fontSize = '18px';
+    testDiv.style.position = 'fixed';
+    testDiv.style.top = '0';
+    testDiv.style.left = '0';
+    testDiv.style.right = '0';
+    testDiv.style.zIndex = '9999';
+    testDiv.innerText = '[SPA TEST] bootstrap() started';
+    document.body.prepend(testDiv);
     render();
     window._spaDebug.push('bootstrap: after first render');
     showDebugMarker('bootstrap: after first render');
