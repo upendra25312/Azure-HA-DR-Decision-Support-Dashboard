@@ -109,11 +109,21 @@ window.addEventListener("popstate", render);
 bootstrap();
 
 async function bootstrap() {
+    window._spaDebug = [];
+    window._spaDebug.push('bootstrap: start');
+    showDebugMarker('bootstrap: start');
     render();
+    window._spaDebug.push('bootstrap: after first render');
+    showDebugMarker('bootstrap: after first render');
 
     const dataResult = await loadCatalogData();
 
+    window._spaDebug.push('bootstrap: after loadCatalogData');
+    showDebugMarker('bootstrap: after loadCatalogData');
+
     if (dataResult.error) {
+        window._spaDebug.push('bootstrap: dataResult.error');
+        showDebugMarker('bootstrap: dataResult.error');
         state.loading = false;
         state.error = dataResult.error;
         render();
@@ -127,7 +137,27 @@ async function bootstrap() {
     state.categories = uniqueValues(state.items, "category");
     syncNotesIntoItems();
     state.loading = false;
+    window._spaDebug.push('bootstrap: before final render');
+    showDebugMarker('bootstrap: before final render');
     render();
+    window._spaDebug.push('bootstrap: after final render');
+    showDebugMarker('bootstrap: after final render');
+}
+
+function showDebugMarker(msg) {
+    const marker = document.createElement('div');
+    marker.style.background = '#e0e0ff';
+    marker.style.color = '#2222aa';
+    marker.style.padding = '8px';
+    marker.style.fontSize = '14px';
+    marker.style.position = 'fixed';
+    marker.style.top = (60 + 30 * document.querySelectorAll('.spa-debug-marker').length) + 'px';
+    marker.style.left = '0';
+    marker.style.right = '0';
+    marker.style.zIndex = '9998';
+    marker.className = 'spa-debug-marker';
+    marker.innerText = '[SPA DEBUG] ' + msg;
+    document.body.appendChild(marker);
 }
 
 async function loadCatalogData() {
