@@ -67,7 +67,24 @@ const state = {
     workspace: loadWorkspace()
 };
 
+
 const app = document.getElementById("app");
+
+// Global error handler for debugging client-side errors
+window.addEventListener("error", function(event) {
+    const errorDiv = document.createElement("div");
+    errorDiv.style.background = "#ffdddd";
+    errorDiv.style.color = "#a00";
+    errorDiv.style.padding = "16px";
+    errorDiv.style.fontSize = "16px";
+    errorDiv.style.position = "fixed";
+    errorDiv.style.top = "0";
+    errorDiv.style.left = "0";
+    errorDiv.style.right = "0";
+    errorDiv.style.zIndex = "9999";
+    errorDiv.innerText = "Uncaught error: " + event.message + "\n(" + event.filename + ":" + event.lineno + ")";
+    document.body.prepend(errorDiv);
+});
 
 document.addEventListener("click", handleDocumentClick);
 document.addEventListener("input", handleDocumentInput);
