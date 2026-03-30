@@ -14,7 +14,12 @@ window.addEventListener("unhandledrejection", function(event) {
     document.body.prepend(errorDiv);
 });
 import { buildCsvExport, buildJsonExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
-import { MATURITY_CONFIG } from "./data/reviewMeta.mjs";
+import {
+    FAMILY_BLURBS,
+    MATURITY_CONFIG,
+    REVIEW_META,
+    SEVERITY_CONFIG
+} from "./data/reviewMeta.mjs";
 import {
     HOME_TRUST_CARDS,
     METHOD_SECTIONS,
