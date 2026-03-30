@@ -6,6 +6,7 @@ import { MATURITY_CONFIG, REVIEW_META } from "../app/data/reviewMeta.mjs";
 import {
     canonicalizeServiceName,
     cleanValue,
+    extractHttpUrls,
     listFromDelimited,
     parseCSV,
     sentenceList,
@@ -238,7 +239,7 @@ async function buildUpstreamProfiles(files) {
             const category = cleanValue(item.category);
             const subcategory = cleanValue(item.subcategory);
             const dimension = cleanValue(item.waf);
-            const link = cleanValue(item.link);
+            const links = extractHttpUrls(item.link);
             const text = cleanValue(item.text || item.description);
             const armService = cleanValue(item["arm-service"]);
 
@@ -263,14 +264,16 @@ async function buildUpstreamProfiles(files) {
             if (text && !profile.sampleTexts.includes(text)) {
                 profile.sampleTexts.push(text);
             }
-            if (link && !profile.references.has(link)) {
-                profile.references.set(link, {
-                    label: checklistName,
-                    url: link,
-                    updated: documentTimestamp || "",
-                    severity
-                });
-            }
+            links.forEach((link) => {
+                if (link && !profile.references.has(link)) {
+                    profile.references.set(link, {
+                        label: checklistName,
+                        url: link,
+                        updated: documentTimestamp || "",
+                        severity
+                    });
+                }
+            });
 
             profiles.set(serviceName, profile);
         }
@@ -412,15 +415,15 @@ function buildResearchReferences(row, sourceEntries) {
         row?.["Best Microsoft Learn Documentation Link 1"],
         row?.["Best Microsoft Learn Documentation Link 2"],
         row?.["Best Microsoft Learn Documentation Link 3"]
-    ]
-        .map((url) => cleanValue(url))
-        .filter(Boolean);
+    ].flatMap((url) => extractHttpUrls(url));
 
     sourceEntries.slice(0, 3).forEach((source) => {
-        references.push({
-            label: cleanValue(source["Source Title"]) || "Microsoft source",
-            url: cleanValue(source["Source URL"]),
-            updated: cleanValue(source["Last Updated (If Available)"]) || cleanValue(source["Date Accessed"])
+        extractHttpUrls(source["Source URL"]).forEach((url) => {
+            references.push({
+                label: cleanValue(source["Source Title"]) || "Microsoft source",
+                url,
+                updated: cleanValue(source["Last Updated (If Available)"]) || cleanValue(source["Date Accessed"])
+            });
         });
     });
 

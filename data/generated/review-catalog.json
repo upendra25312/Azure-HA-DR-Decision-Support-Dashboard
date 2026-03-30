@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T03:03:34.471Z",
+  "generatedAt": "2026-03-30T18:32:26.416Z",
   "source": {
     "upstreamRepo": "Azure/review-checklists",
     "upstreamChecklistFileCount": 50,
@@ -4597,7 +4597,7 @@
         },
         {
           "label": "Data Security review checklist",
-          "url": "https://learn.microsoft.com/azure/data-factory/store-credentials-in-key-vault, https:/learn.microsoft.com/azure/data-factory/how-to-use-azure-key-vault-secrets-pipeline-activities",
+          "url": "https://learn.microsoft.com/azure/data-factory/store-credentials-in-key-vault",
           "updated": "October 23, 2024"
         },
         {

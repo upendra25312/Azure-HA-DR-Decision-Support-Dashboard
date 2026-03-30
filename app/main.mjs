@@ -34,6 +34,7 @@ import {
     canonicalizeServiceName,
     cleanValue,
     escapeHtml,
+    extractHttpUrls,
     formatDate,
     isHiddenPublicSourceUrl,
     listFromDelimited,
@@ -178,13 +179,14 @@ function normalizeCatalogItem(item) {
     const rules = MATURITY_CONFIG[maturity];
     const references = Array.isArray(item.references)
         ? item.references
-            .map((reference) => ({
+            .flatMap((reference) => extractHttpUrls(reference?.url).map((url) => ({
                 label: cleanValue(reference?.label) || "Microsoft guidance",
-                url: cleanValue(reference?.url),
+                url,
                 updated: cleanValue(reference?.updated)
-            }))
+            })))
             .filter((reference) => reference.url && !isHiddenPublicSourceUrl(reference.url))
         : [];
+    const sourceUrls = extractHttpUrls(item.sourceUrl);
 
     return {
         id: cleanValue(item.id) || slugify(serviceName),
@@ -196,7 +198,7 @@ function normalizeCatalogItem(item) {
         severity,
         maturity,
         sourceName: cleanValue(item.sourceName) || references[0]?.label || "Microsoft guidance",
-        sourceUrl: cleanValue(item.sourceUrl) || references[0]?.url || "",
+        sourceUrl: sourceUrls[0] || references[0]?.url || "",
         sourceVersion: cleanValue(item.sourceVersion) || references[0]?.updated || "Current as reviewed",
         lastReviewedDate: cleanValue(item.lastReviewedDate),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => cleanValue(tag)).filter(Boolean) : [],
@@ -323,15 +325,15 @@ function buildReferences(row, sourceEntries) {
         row["Best Microsoft Learn Documentation Link 1"],
         row["Best Microsoft Learn Documentation Link 2"],
         row["Best Microsoft Learn Documentation Link 3"]
-    ]
-        .map((url) => cleanValue(url))
-        .filter(Boolean);
+    ].flatMap((url) => extractHttpUrls(url));
 
     sourceEntries.slice(0, 3).forEach((source) => {
-        candidates.push({
-            label: cleanValue(source["Source Title"]) || "Microsoft source",
-            url: cleanValue(source["Source URL"]),
-            updated: cleanValue(source["Last Updated (If Available)"]) || cleanValue(source["Date Accessed"])
+        extractHttpUrls(source["Source URL"]).forEach((url) => {
+            candidates.push({
+                label: cleanValue(source["Source Title"]) || "Microsoft source",
+                url,
+                updated: cleanValue(source["Last Updated (If Available)"]) || cleanValue(source["Date Accessed"])
+            });
         });
     });
 
@@ -453,11 +455,11 @@ function renderReferenceArchitecturesPage() {
             <h1>Reference Architectures</h1>
             <p>Explore official Azure reference architectures for High Availability (HA) and Disaster Recovery (DR):</p>
             <ul>
-                <li><a href="https://learn.microsoft.com/azure/architecture/example-scenario/infrastructure/ha-application" target="_blank">HA application infrastructure scenario</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/azure/architecture/example-scenario/infrastructure/iaas-high-availability-disaster-recovery" target="_blank">Azure Virtual Machines baseline architecture</a></li>
                 <li><a href="https://learn.microsoft.com/azure/architecture/resiliency/" target="_blank">Azure Resiliency guidance</a></li>
                 <li><a href="https://learn.microsoft.com/azure/architecture/framework/resiliency/overview" target="_blank">Well-Architected Framework: Resiliency</a></li>
-                <li><a href="https://learn.microsoft.com/azure/architecture/guide/design-principles/availability" target="_blank">Design for availability</a></li>
-                <li><a href="https://learn.microsoft.com/azure/architecture/guide/disaster-recovery/" target="_blank">Disaster Recovery guidance</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/azure/architecture/guide/design-principles/redundancy" target="_blank">Design for redundancy</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/azure/reliability/disaster-recovery-overview" target="_blank">Disaster recovery overview</a></li>
             </ul>
         </main>
     `;
@@ -523,7 +525,7 @@ function renderHomePage() {
                             <li><strong>Faster recovery</strong> with RTO/RPO targets as low as minutes</li>
                             <li><strong>Global scale</strong> with multi-region failover and geo-redundancy</li>
                         </ul>
-                        <p class="section-copy"><a href="https://learn.microsoft.com/azure/architecture/resiliency/business-justification" target="_blank">See the business case for Azure resilience</a></p>
+                        <p class="section-copy"><a href="https://learn.microsoft.com/en-us/azure/reliability/concept-business-continuity-high-availability-disaster-recovery" target="_blank">See Microsoft guidance on business continuity, HA, and DR</a></p>
                     </div>
                 </div>
             </section>

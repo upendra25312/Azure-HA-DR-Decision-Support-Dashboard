@@ -2,6 +2,19 @@ export function cleanValue(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+export function extractHttpUrls(value) {
+    const normalized = cleanValue(value)
+        .replace(/https:\/(?=[^/])/gi, "https://")
+        .replace(/http:\/(?=[^/])/gi, "http://")
+        .replace(/([,;])\s*(https?:\/\/)/gi, "\n$2");
+
+    const matches = normalized.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+
+    return [...new Set(matches
+        .map((url) => url.replace(/[),.;]+$/g, ""))
+        .filter(Boolean))];
+}
+
 export function escapeHtml(value) {
     return String(value || "")
         .replace(/&/g, "&amp;")
