@@ -1,7 +1,7 @@
 export const PRODUCT = {
     name: "Azure Review Board",
     valueProposition: "Source-backed Azure architecture review guidance with a clear review surface and a local personal workspace.",
-    heroTitle: "Azure architecture review that turns findings into a clean review pack.",
+    heroTitle: "Authoritative guidance and best practices for architecting High Availability (HA) and Disaster Recovery (DR) solutions on Azure.",
     heroIntro: "The review surface is open, fast, and source traceable. Personal Workspace keeps selected items, notes, and exports in this browser.",
     primaryCta: {
         label: "Open Public Explorer",
