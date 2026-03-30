@@ -448,6 +448,22 @@ function renderHomePage() {
 
     return `
         <main id="main" class="page">
+            <section class="section business-value">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Why Resilience Matters</p>
+                        <h2 class="section-title">Business Value of HA & DR</h2>
+                        <p class="section-copy">Downtime and data loss can cost organizations millions. Azure's resilient architectures help you achieve:</p>
+                        <ul class="metrics-list">
+                            <li><strong>99.99%+ Uptime</strong> for mission-critical workloads (SLA-backed)</li>
+                            <li><strong>60% reduction</strong> in unplanned outage costs (Forrester TEI, 2023)</li>
+                            <li><strong>Faster recovery</strong> with RTO/RPO targets as low as minutes</li>
+                            <li><strong>Global scale</strong> with multi-region failover and geo-redundancy</li>
+                        </ul>
+                        <p class="section-copy"><a href="https://learn.microsoft.com/azure/architecture/resiliency/business-justification" target="_blank">See the business case for Azure resilience</a></p>
+                    </div>
+                </div>
+            </section>
             <section class="page-hero">
                 <p class="eyebrow">Decision Support</p>
                 <div class="hero-grid">
