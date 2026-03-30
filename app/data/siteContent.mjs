@@ -1,17 +1,18 @@
 export const PRODUCT = {
     name: "Azure Review Board",
-    valueProposition: "Source-backed Azure architecture review guidance with a clear review surface and a local personal workspace.",
-    heroTitle: "Authoritative guidance and best practices for architecting High Availability (HA) and Disaster Recovery (DR) solutions on Azure.",
-    heroIntro: "The review surface is open, fast, and source traceable. Personal Workspace keeps selected items, notes, and exports in this browser.",
+    tagline: "HA & DR Guidance for Azure",
+    valueProposition: "Authoritative High Availability (HA) & Disaster Recovery (DR) guidance for Azure architects, engineers, and decision-makers.",
+    heroTitle: "Authoritative Azure HA & DR guidance: best practices, checklists, and reference architectures.",
+    heroIntro: "Explore proven strategies, checklists, and best practices for building resilient, highly available, and disaster-ready solutions on Azure.",
     primaryCta: {
-        label: "Open Public Explorer",
+        label: "Start HA/DR Review",
         route: "/explorer"
     },
     secondaryCta: {
-        label: "Open Personal Workspace",
-        route: "/workspace"
+        label: "Browse HA/DR Patterns",
+        route: "/patterns"
     },
-    heroSupport: "This deployment stores notes, selections, and exports locally in your browser. No sign-in. No shared records."
+    heroSupport: "All guidance is aligned with Azure security and compliance best practices. This deployment stores notes, selections, and exports locally in your browser. No sign-in. No shared records."
 };
 
 export const HOME_TRUST_CARDS = [
