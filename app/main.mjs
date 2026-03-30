@@ -37,6 +37,7 @@ const ROUTES = [
     { path: "/services", title: "Services", mode: "public" },
     { path: "/reference-architectures", title: "Reference Architectures", mode: "public" },
     { path: "/security-compliance", title: "Security & Compliance", mode: "public" },
+    { path: "/patterns", title: "HA/DR Patterns", mode: "public" },
     { path: "/method", title: "Method", mode: "public" },
     { path: "/workspace", title: "Personal Workspace", mode: "public" }
 ];
@@ -364,24 +365,51 @@ function renderPage(route) {
     }
 
     switch (route.path) {
-    case "/":
-        return renderHomePage();
-    case "/explorer":
-        return renderExplorerPage();
-    case "/services":
-        return renderServicesPage();
-
-    case "/reference-architectures":
-        return renderReferenceArchitecturesPage();
-    case "/security-compliance":
-        return renderSecurityCompliancePage();
-    case "/method":
-        return renderMethodPage();
-    case "/workspace":
-        return renderPersonalWorkspacePage();
-    default:
-        return renderNotFoundPage();
+        case "/":
+            return renderHomePage();
+        case "/explorer":
+            return renderExplorerPage();
+        case "/services":
+            return renderServicesPage();
+        case "/reference-architectures":
+            return renderReferenceArchitecturesPage();
+        case "/security-compliance":
+            return renderSecurityCompliancePage();
+        case "/patterns":
+            return renderPatternsPage();
+        case "/method":
+            return renderMethodPage();
+        case "/workspace":
+            return renderPersonalWorkspacePage();
+        default:
+            return renderNotFoundPage();
     }
+}
+
+function renderPatternsPage() {
+    return `
+        <main class="page">
+            <h1>HA/DR Patterns</h1>
+            <p>Browse authoritative Azure High Availability (HA) and Disaster Recovery (DR) patterns, with direct links to Microsoft Learn and official diagrams.</p>
+            <ul>
+                <li><a href="https://learn.microsoft.com/azure/architecture/web-apps/guides/multi-region-app-service/multi-region-app-service" target="_blank">Multi-region App Service DR</a> – Official App Service DR pattern for RTO/RPO-driven decisions.</li>
+                <li><a href="https://learn.microsoft.com/azure/storage/common/storage-redundancy" target="_blank">Azure Storage redundancy patterns</a> – LRS, GRS, and redundancy models.</li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/guide/networking/global-web-applications/overview" target="_blank">Global routing redundancy (Front Door)</a> – Ingress DR and global routing.</li>
+                <li><a href="https://learn.microsoft.com/azure/api-management/high-availability" target="_blank">Multi-region API Management deployment</a> – APIM tier-aware HA/DR.</li>
+                <li><a href="https://learn.microsoft.com/azure/vpn-gateway/vpn-gateway-highlyavailable" target="_blank">Highly available gateway connectivity</a> – VPN active-active and multi-device resilience.</li>
+                <li><a href="https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/virtual-wan-network-topology" target="_blank">Virtual WAN landing zone topology</a> – Multi-region Virtual WAN topology.</li>
+                <li><a href="https://learn.microsoft.com/en-us/fabric/security/experience-specific-guidance" target="_blank">Microsoft Fabric DR guidance</a> – Experience-specific DR actions.</li>
+                <li><a href="https://learn.microsoft.com/en-us/power-platform/admin/business-continuity-disaster-recovery" target="_blank">Dynamics 365 SaaS BCDR</a> – Official Dynamics continuity reference.</li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/ai-ml/architecture/baseline-openai-e2e-chat?source=recommendations" target="_blank">AI workload regional resiliency gap</a> – Baseline Azure AI Foundry chat reference.</li>
+                <li><a href="https://learn.microsoft.com/azure/reliability/reliability-aks" target="_blank">AKS HA and DR overview</a> – Zonal and regional design.</li>
+                <li><a href="https://learn.microsoft.com/en-gb/azure/reliability/reliability-functions" target="_blank">Multi-region Functions patterns</a> – Trigger-specific active-active/passive patterns.</li>
+                <li><a href="https://learn.microsoft.com/azure/reliability/reliability-key-vault" target="_blank">Key Vault paired-region failover</a> – Reliability and failover guidance.</li>
+                <li><a href="https://learn.microsoft.com/azure/ai-services/openai/how-to/business-continuity-disaster-recovery" target="_blank">Azure OpenAI BCDR topology</a> – Dual-region resource and gateway design.</li>
+            </ul>
+            <p>See the <a href="/docs/research-report.md">research report</a> for cross-service findings and decision matrix.</p>
+        </main>
+    `;
+}
 }
 
 function renderReferenceArchitecturesPage() {
