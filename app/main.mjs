@@ -1,3 +1,18 @@
+// Global unhandled promise rejection handler for debugging async errors
+window.addEventListener("unhandledrejection", function(event) {
+    const errorDiv = document.createElement("div");
+    errorDiv.style.background = "#ffdddd";
+    errorDiv.style.color = "#a00";
+    errorDiv.style.padding = "16px";
+    errorDiv.style.fontSize = "16px";
+    errorDiv.style.position = "fixed";
+    errorDiv.style.top = "48px";
+    errorDiv.style.left = "0";
+    errorDiv.style.right = "0";
+    errorDiv.style.zIndex = "9999";
+    errorDiv.innerText = "Unhandled promise rejection: " + (event.reason && event.reason.message ? event.reason.message : event.reason);
+    document.body.prepend(errorDiv);
+});
 import { buildCsvExport, buildJsonExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
 import {
     FAMILY_BLURBS,
