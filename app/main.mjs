@@ -468,9 +468,8 @@ function renderPatternsPage() {
                 <li><a href="https://learn.microsoft.com/azure/ai-services/openai/how-to/business-continuity-disaster-recovery" target="_blank">Azure OpenAI BCDR topology</a> – Dual-region resource and gateway design.</li>
             </ul>
             <p>See the <a href="/docs/research-report.md">research report</a> for cross-service findings and decision matrix.</p>
-        </main>
+	</main>
     `;
-}
 }
 
 function renderReferenceArchitecturesPage() {
