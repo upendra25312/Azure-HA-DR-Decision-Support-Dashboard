@@ -35,6 +35,8 @@ const ROUTES = [
     { path: "/", title: "Home", mode: "public" },
     { path: "/explorer", title: "Explorer", mode: "public" },
     { path: "/services", title: "Services", mode: "public" },
+    { path: "/reference-architectures", title: "Reference Architectures", mode: "public" },
+    { path: "/security-compliance", title: "Security & Compliance", mode: "public" },
     { path: "/method", title: "Method", mode: "public" },
     { path: "/workspace", title: "Personal Workspace", mode: "public" }
 ];
@@ -368,6 +370,11 @@ function renderPage(route) {
         return renderExplorerPage();
     case "/services":
         return renderServicesPage();
+
+    case "/reference-architectures":
+        return renderReferenceArchitecturesPage();
+    case "/security-compliance":
+        return renderSecurityCompliancePage();
     case "/method":
         return renderMethodPage();
     case "/workspace":
@@ -375,6 +382,38 @@ function renderPage(route) {
     default:
         return renderNotFoundPage();
     }
+}
+
+function renderReferenceArchitecturesPage() {
+    return `
+        <main class="page">
+            <h1>Reference Architectures</h1>
+            <p>Explore official Azure reference architectures for High Availability (HA) and Disaster Recovery (DR):</p>
+            <ul>
+                <li><a href="https://learn.microsoft.com/azure/architecture/example-scenario/infrastructure/ha-application" target="_blank">HA application infrastructure scenario</a></li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/resiliency/" target="_blank">Azure Resiliency guidance</a></li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/framework/resiliency/overview" target="_blank">Well-Architected Framework: Resiliency</a></li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/guide/design-principles/availability" target="_blank">Design for availability</a></li>
+                <li><a href="https://learn.microsoft.com/azure/architecture/guide/disaster-recovery/" target="_blank">Disaster Recovery guidance</a></li>
+            </ul>
+        </main>
+    `;
+}
+
+function renderSecurityCompliancePage() {
+    return `
+        <main class="page">
+            <h1>Security & Compliance</h1>
+            <p>All guidance aligns with Azure security and compliance best practices. Key resources:</p>
+            <ul>
+                <li><a href="https://learn.microsoft.com/azure/security/fundamentals/overview" target="_blank">Azure Security Fundamentals</a></li>
+                <li><a href="https://learn.microsoft.com/azure/defender-for-cloud/" target="_blank">Microsoft Defender for Cloud</a></li>
+                <li><a href="https://learn.microsoft.com/azure/compliance/" target="_blank">Azure Compliance Documentation</a></li>
+                <li><a href="https://learn.microsoft.com/azure/security/benchmarks/" target="_blank">Azure Security Benchmark</a></li>
+                <li><a href="https://learn.microsoft.com/azure/security/" target="_blank">Azure Security Documentation</a></li>
+            </ul>
+        </main>
+    `;
 }
 
 function renderTopbar(route) {
