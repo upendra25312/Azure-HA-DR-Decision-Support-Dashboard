@@ -7,6 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
+    "sync:review-checklists": "node scripts/sync-review-checklists.mjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "playwright-install": "npx playwright install"
   },

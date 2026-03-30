@@ -97,6 +97,22 @@ async function bootstrap() {
 
 async function loadCatalogData() {
     try {
+        const generatedResponse = await fetch("/data/generated/review-catalog.json", {
+            cache: "no-store"
+        });
+
+        if (generatedResponse.ok) {
+            const payload = await generatedResponse.json();
+            const items = Array.isArray(payload.items)
+                ? payload.items.map((item) => normalizeCatalogItem(item))
+                : [];
+
+            return {
+                items,
+                sourceRows: Array.isArray(payload.sources) ? payload.sources : []
+            };
+        }
+
         const [researchResponse, sourceResponse] = await Promise.all([
             fetch("/data/research_knowledge_base.csv"),
             fetch("/data/source_register.csv")
@@ -114,6 +130,73 @@ async function loadCatalogData() {
     } catch (error) {
         return { error: "The review catalog could not be loaded. Verify that the CSV files are available in this deployment." };
     }
+}
+
+function normalizeCatalogItem(item) {
+    const serviceName = canonicalizeServiceName(item.serviceName || item.title || "Unnamed service");
+    const maturity = MATURITY_CONFIG[item.maturity] ? item.maturity : "Advisory";
+    const severity = SEVERITY_CONFIG[item.severity] ? item.severity : "Medium";
+    const rules = MATURITY_CONFIG[maturity];
+    const references = Array.isArray(item.references)
+        ? item.references
+            .map((reference) => ({
+                label: cleanValue(reference?.label) || "Microsoft guidance",
+                url: cleanValue(reference?.url),
+                updated: cleanValue(reference?.updated)
+            }))
+            .filter((reference) => reference.url && !isHiddenPublicSourceUrl(reference.url))
+        : [];
+
+    return {
+        id: cleanValue(item.id) || slugify(serviceName),
+        title: cleanValue(item.title) || `${serviceName} review posture`,
+        summary: cleanValue(item.summary) || "Checklist-derived review guidance for this Azure service.",
+        serviceFamily: cleanValue(item.serviceFamily) || "Identity, Security, and Platform Dependencies",
+        serviceName,
+        category: cleanValue(item.category) || "Platform dependency",
+        severity,
+        maturity,
+        sourceName: cleanValue(item.sourceName) || references[0]?.label || "Microsoft guidance",
+        sourceUrl: cleanValue(item.sourceUrl) || references[0]?.url || "",
+        sourceVersion: cleanValue(item.sourceVersion) || references[0]?.updated || "Current as reviewed",
+        lastReviewedDate: cleanValue(item.lastReviewedDate),
+        tags: Array.isArray(item.tags) ? item.tags.map((tag) => cleanValue(tag)).filter(Boolean) : [],
+        exportEligible: typeof item.exportEligible === "boolean" ? item.exportEligible : rules.defaultExport,
+        requiresExplicitOverride: typeof item.requiresExplicitOverride === "boolean"
+            ? item.requiresExplicitOverride
+            : rules.overrideRequired,
+        notes: cleanValue(item.notes) || cleanValue(item.summary),
+        guardrail: cleanValue(item.guardrail) || rules.warning,
+        recommendedActions: Array.isArray(item.recommendedActions)
+            ? item.recommendedActions.map((action) => cleanValue(action)).filter(Boolean)
+            : ["Validate the linked Microsoft guidance before exporting this service."],
+        references,
+        localNote: "",
+        detail: {
+            haSummary: cleanValue(item.detail?.haSummary),
+            drSummary: cleanValue(item.detail?.drSummary),
+            limitations: Array.isArray(item.detail?.limitations)
+                ? item.detail.limitations.map((entry) => cleanValue(entry)).filter(Boolean)
+                : [],
+            dependencies: Array.isArray(item.detail?.dependencies)
+                ? item.detail.dependencies.map((entry) => cleanValue(entry)).filter(Boolean)
+                : [],
+            recommendedFor: Array.isArray(item.detail?.recommendedFor)
+                ? item.detail.recommendedFor.map((entry) => cleanValue(entry)).filter(Boolean)
+                : [],
+            notRecommendedFor: Array.isArray(item.detail?.notRecommendedFor)
+                ? item.detail.notRecommendedFor.map((entry) => cleanValue(entry)).filter(Boolean)
+                : [],
+            testGuidance: Array.isArray(item.detail?.testGuidance)
+                ? item.detail.testGuidance.map((entry) => cleanValue(entry)).filter(Boolean)
+                : [],
+            cost: cleanValue(item.detail?.cost),
+            complexity: cleanValue(item.detail?.complexity),
+            confidence: cleanValue(item.detail?.confidence),
+            documentationReviewDate: cleanValue(item.detail?.documentationReviewDate)
+        },
+        checklistCoverage: item.checklistCoverage || null
+    };
 }
 
 function buildReviewItems(researchRows, sourceRows) {
@@ -605,7 +688,7 @@ function renderServicesPage() {
             <section class="page-hero">
                 <p class="eyebrow">Service catalog</p>
                 <h1 class="hero-title">Service-first navigation.</h1>
-                <p class="hero-copy">This page exists to get users into the explorer quickly. Each card opens the detailed review posture for one Azure service.</p>
+                <p class="hero-copy">This page exists to get users into the explorer quickly. Each card opens the detailed review posture for one Azure service or platform surface.</p>
             </section>
             <section class="section">
                 <div class="service-grid">
@@ -894,6 +977,20 @@ function renderReviewCard(item, selected) {
 
 function renderDetailPanel(item) {
     const publicReferences = item.references.filter((reference) => !isHiddenPublicSourceUrl(reference.url));
+    const checklistCoverage = item.checklistCoverage?.checklistCount
+        ? `
+            <div class="detail-block">
+                <h3>Checklist coverage</h3>
+                <p class="section-copy">
+                    Aggregated from ${item.checklistCoverage.itemCount || 0} checklist item${item.checklistCoverage.itemCount === 1 ? "" : "s"}
+                    across ${item.checklistCoverage.checklistCount} review checklist${item.checklistCoverage.checklistCount === 1 ? "" : "s"}.
+                </p>
+                <ul class="detail-list">
+                    ${item.checklistCoverage.checklistNames.slice(0, 4).map((name) => `<li>${escapeHtml(name)}</li>`).join("")}
+                </ul>
+            </div>
+        `
+        : "";
     const sourceLinks = publicReferences.map((reference) => `
         <li>
             <a class="inline-link" href="${escapeHtml(reference.url)}" target="_blank" rel="noreferrer">
@@ -960,6 +1057,8 @@ function renderDetailPanel(item) {
                 ${item.detail.testGuidance.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}
             </ul>
         </div>
+
+        ${checklistCoverage}
 
         <div class="detail-block">
             <h3>Source traceability</h3>
