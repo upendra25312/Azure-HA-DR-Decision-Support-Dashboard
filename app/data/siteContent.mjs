@@ -1,91 +1,146 @@
 export const PRODUCT = {
     name: "Azure Review Board",
-    tagline: "HA & DR Guidance for Azure",
-    valueProposition: "Authoritative High Availability (HA) & Disaster Recovery (DR) guidance for Azure architects, engineers, and decision-makers.",
-    heroTitle: "Authoritative Azure HA & DR guidance: best practices, checklists, and reference architectures.",
-    heroIntro: "Explore proven strategies, checklists, and best practices for building resilient, highly available, and disaster-ready solutions on Azure.",
-    primaryCta: {
-        label: "Start HA/DR Review",
-        route: "/explorer"
-    },
-    secondaryCta: {
-        label: "Browse HA/DR Patterns",
-        route: "/patterns"
-    },
-    heroSupport: "All guidance is aligned with Azure security and compliance best practices. This deployment stores notes, selections, and exports locally in your browser. No sign-in. No shared records."
+    brandEyebrow: "Architecture Review",
+    tagline: "Azure resilience review guidance",
+    valueProposition: "Review Azure architecture decisions with source-backed availability and disaster recovery guidance."
 };
 
-export const HOME_TRUST_CARDS = [
-    {
-        title: "One public job",
-        body: "Explore source-backed guidance quickly without implying shared workflow or enterprise persistence."
+export const SITE_NAV = [
+    { path: "/", title: "Home" },
+    { path: "/explorer", title: "Explorer" },
+    { path: "/paths", title: "Architecture Paths" },
+    { path: "/method", title: "Review Method" },
+    { path: "/workspace", title: "Workspace" }
+];
+
+export const HOME_PAGE_COPY = {
+    hero: {
+        eyebrow: "Azure Resilience Review",
+        title: "Review Azure architecture decisions with source-backed availability and disaster recovery guidance.",
+        body: "Use curated architecture paths, service-level review items, and a local workspace to build a review pack quickly.",
+        primaryCta: {
+            label: "Open Explorer",
+            route: "/explorer"
+        },
+        secondaryCta: {
+            label: "Open Workspace",
+            route: "/workspace"
+        }
     },
-    {
-        title: "Safe export defaults",
-        body: "GA-ready content exports by default. Advisory and preview content require deliberate inclusion."
+    trustStrip: {
+        title: "Trust by design",
+        cards: [
+            {
+                title: "Source traceability",
+                body: "Every review item links back to Microsoft guidance."
+            },
+            {
+                title: "Maturity-aware defaults",
+                body: "Preview and deprecated content are visibly marked and excluded from default export."
+            },
+            {
+                title: "Architecture paths",
+                body: "Start from the architecture problem, not just a service list."
+            },
+            {
+                title: "Local-only workspace",
+                body: "Notes stay in this browser unless you export them."
+            }
+        ]
     },
-    {
-        title: "Traceable sources",
-        body: "Every review item keeps Microsoft documentation links, review dates, and clear maturity labeling."
+    pathsSection: {
+        eyebrow: "Starting points",
+        title: "Start from the architecture question.",
+        body: "Choose a path based on the review problem you need to solve."
     },
-    {
-        title: "Honest boundaries",
-        body: "The review surface does not claim approvals, sign-off, shared notes, or hidden enterprise controls."
+    explorerPreview: {
+        eyebrow: "Review Catalog",
+        title: "Explore the catalog by service, maturity, and risk.",
+        body: "Filter review items, inspect source-backed guidance, and build a review pack from the services that matter most.",
+        cta: {
+            label: "Open Explorer",
+            route: "/explorer"
+        }
+    },
+    methodStrip: {
+        eyebrow: "Review Method",
+        title: "Clear review rules. Clear export behavior.",
+        body: "Every item includes maturity, severity, and source context. Non-GA content stays out of default export unless it is explicitly included.",
+        cta: {
+            label: "Review Method",
+            route: "/method"
+        }
     }
-];
+};
 
-export const MODE_CARDS = [
-    {
-        title: "Review Explorer",
-        label: "Open access",
-        body: "Browse services, filter by maturity and severity, inspect source traceability, and save local-only notes in this browser.",
-        actionLabel: "Explore now",
-        actionRoute: "/explorer"
+export const HOME_TRUST_CARDS = HOME_PAGE_COPY.trustStrip.cards;
+
+export const METHOD_PAGE_COPY = {
+    intro: {
+        eyebrow: "Review Method",
+        title: "How the review model works",
+        body: "The review model keeps source traceability, maturity logic, and export rules visible so users can understand what they are looking at and what belongs in an exported pack."
     },
-    {
-        title: "Personal Workspace",
-        label: "Local only",
-        body: "Keep a shortlist of services, capture notes, and export a review pack from this browser without signing in.",
-        actionLabel: "Open workspace",
-        actionRoute: "/workspace"
-    }
-];
+    sections: [
+        {
+            eyebrow: "Source logic",
+            title: "Microsoft sources stay visible in the review flow.",
+            body: "Every item is tied back to Microsoft documentation so the review starts from named guidance, not abstract commentary."
+        },
+        {
+            eyebrow: "Maturity rules",
+            title: "Maturity changes behavior, not just labels.",
+            body: "GA-ready content is eligible by default. Advisory and preview content remain visible for review but require deliberate inclusion before export."
+        },
+        {
+            eyebrow: "Export rules",
+            title: "Exports disclose what was included.",
+            body: "Review packs show the maturity mix and keep source references visible. Deprecated content stays excluded from default export."
+        },
+        {
+            eyebrow: "Workspace boundary",
+            title: "The workspace is local to this browser.",
+            body: "Selections, notes, and JSON backups remain local unless the user exports them. This deployment does not create shared records or hidden workflow."
+        }
+    ],
+    supported: [
+        "Source-backed service exploration with maturity and severity filters.",
+        "Architecture-path entry points that launch the explorer with guided filters.",
+        "Local notes, item selection, and export in the current browser.",
+        "Markdown, CSV, and JSON review-pack exports with visible maturity context."
+    ],
+    localOnly: [
+        "Workspace selections, notes, and exports stay in the current browser unless you export them.",
+        "JSON export and import preserve your local review pack without creating a server-side record.",
+        "No shared review records, role assignments, approvals, or audit trails are created."
+    ],
+    notSupported: [
+        "Shared review records, collaboration claims, or implied enterprise sign-off.",
+        "Exports that hide advisory or preview content in the maturity mix.",
+        "Treating deprecated or preview guidance as a default leadership baseline."
+    ]
+};
 
-export const WHAT_WORKS_NOW = [
-    "Public service exploration with maturity and severity filters.",
-    "Source traceability from Microsoft documentation links and review dates.",
-    "Personal workspace notes and shortlisted review items stored in the current browser.",
-    "Markdown, CSV, and JSON exports with visible maturity composition and limitations."
-];
-
-export const WHAT_STAYS_LOCAL = [
-    "Workspace selections, notes, and exports stay in the current browser unless you export them.",
-    "JSON export and import preserve your local review pack without creating a server-side record.",
-    "No shared review records, role assignments, or approval workflow are created.",
-    "No audit trail or export history is captured by this deployment."
-];
-
-export const NOT_SUPPORTED = [
-    "Shared review records, fake collaboration, or implied enterprise sign-off.",
-    "Exports that hide advisory or preview content in the maturity mix.",
-    "Treating deprecated or preview guidance as a default leadership baseline.",
-    "Assuming browser-local notes are durable team records without exporting them."
-];
-
-export const METHOD_SECTIONS = [
-    {
-        eyebrow: "What this is",
-        title: "A review accelerator, not a sign-off engine.",
-        body: "The product normalizes Azure continuity guidance into a review surface that is easier to scan, filter, and discuss. It supports preparation and structured review. It does not replace accountable architecture approval."
+export const WORKSPACE_COPY = {
+    header: {
+        eyebrow: "Local Workspace",
+        title: "Build your review pack.",
+        body: "Select review items in Explorer, capture notes in this browser, and export Markdown, CSV, or JSON. No sign-in. No shared records."
     },
-    {
-        eyebrow: "How content is curated",
-        title: "Microsoft sources first, maturity second, export posture third.",
-        body: "Each item stays tied to named Microsoft documentation. We then classify the review item by maturity so the product can change behavior, not just show a badge. That maturity posture directly affects exports."
-    },
-    {
-        eyebrow: "Public boundary",
-        title: "The review surface stays local and lightweight.",
-        body: "Public users can explore, filter, save notes, build a personal workspace, and export their review pack. No shared review records are created in this deployment."
-    }
-];
+    steps: [
+        "Select items",
+        "Add notes",
+        "Export pack"
+    ],
+    helper: "Your workspace is stored locally in this browser.",
+    exportHelper: "Exports include selected items, notes, and current export settings.",
+    emptyItemsTitle: "No items in your review pack",
+    emptyItemsBody: "Select items in Explorer, add notes here, then export your pack.",
+    emptyNotesTitle: "No item notes to capture yet",
+    emptyNotesBody: "Add services to your workspace first. Their local notes will appear here for quick editing and export."
+};
+
+export const FOOTER_COPY = {
+    boundaryText: "Notes stay in this browser unless you export them. This site does not create shared records.",
+    links: SITE_NAV.filter((item) => item.path !== "/")
+};

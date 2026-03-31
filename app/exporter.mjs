@@ -92,7 +92,7 @@ export function buildMarkdownExport({
         `- Deprecated included: No`,
         "",
         "> Review surface exports are sample outputs. They do not create shared review records or audit events.",
-        workspaceNotes ? [
+        options.includeNotes && workspaceNotes ? [
             "",
             "## Workspace notes",
             workspaceNotes
@@ -165,7 +165,7 @@ export function buildCsvExport({
             productName,
             modeLabel,
             workspaceName,
-            workspaceNotes,
+            options.includeNotes ? workspaceNotes : "",
             generatedAt.toISOString(),
             String(items.length),
             maturitySummary || "None",

@@ -15,6 +15,14 @@ window.addEventListener("unhandledrejection", function(event) {
     document.body.prepend(errorDiv);
 });
 import { buildCsvExport, buildJsonExport, buildMarkdownExport, downloadTextFile } from "./exporter.mjs";
+import { renderExplorerRoute } from "./components/explorer/renderExplorerRoute.mjs";
+import { renderHomeRoute } from "./components/home/renderHomeRoute.mjs";
+import { renderMethodRoute } from "./components/method/renderMethodRoute.mjs";
+import { renderArchitecturePathsRoute } from "./components/paths/renderArchitecturePathsRoute.mjs";
+import { renderFooter } from "./components/shell/renderFooter.mjs";
+import { renderTopbar } from "./components/shell/renderTopbar.mjs";
+import { renderWorkspaceRoute } from "./components/workspace/renderWorkspaceRoute.mjs";
+import { ARCHITECTURE_PATHS } from "./data/paths.mjs";
 import {
     FAMILY_BLURBS,
     MATURITY_CONFIG,
@@ -22,13 +30,12 @@ import {
     SEVERITY_CONFIG
 } from "./data/reviewMeta.mjs";
 import {
-    HOME_TRUST_CARDS,
-    METHOD_SECTIONS,
-    MODE_CARDS,
-    NOT_SUPPORTED,
+    FOOTER_COPY,
+    HOME_PAGE_COPY,
+    METHOD_PAGE_COPY,
     PRODUCT,
-    WHAT_STAYS_LOCAL,
-    WHAT_WORKS_NOW
+    SITE_NAV,
+    WORKSPACE_COPY
 } from "./data/siteContent.mjs";
 import {
     canonicalizeServiceName,
@@ -51,14 +58,15 @@ const DEFAULT_WORKSPACE_NAME = "My review pack";
 const ROUTES = [
     { path: "/", title: "Home", mode: "public" },
     { path: "/explorer", title: "Explorer", mode: "public" },
-    { path: "/services", title: "Services", mode: "public" },
-    { path: "/reference-architectures", title: "Reference Architectures", mode: "public" },
-    { path: "/security-compliance", title: "Security & Compliance", mode: "public" },
-    { path: "/patterns", title: "HA/DR Patterns", mode: "public" },
-    { path: "/method", title: "Method", mode: "public" },
-    { path: "/workspace", title: "Personal Workspace", mode: "public" }
+    { path: "/paths", title: "Architecture Paths", mode: "public" },
+    { path: "/method", title: "Review Method", mode: "public" },
+    { path: "/workspace", title: "Workspace", mode: "public" }
 ];
 const LEGACY_ROUTE_REDIRECTS = {
+    "/services": "/explorer",
+    "/reference-architectures": "/paths?type=reference",
+    "/security-compliance": "/paths?type=security",
+    "/patterns": "/paths?type=pattern",
     "/roadmap": "/method",
     "/admin": "/method",
     "/reports": "/workspace"
@@ -365,13 +373,16 @@ function render() {
 
     app.innerHTML = `
         <div class="shell">
-            ${renderTopbar(route)}
+            ${renderTopbar({
+                brandEyebrow: PRODUCT.brandEyebrow,
+                brandName: PRODUCT.name,
+                navItems: SITE_NAV,
+                activePath: route.path
+            })}
             ${renderPage(route)}
-            ${renderFooter()}
+            ${renderFooter(FOOTER_COPY)}
         </div>
     `;
-
-    hydrateExplorerSelection(route);
 }
 
 function renderPage(route) {
@@ -404,21 +415,19 @@ function renderPage(route) {
 
     switch (route.path) {
         case "/":
-            return renderHomePage();
+            return renderHomeRoute({
+                copy: HOME_PAGE_COPY,
+                paths: ARCHITECTURE_PATHS,
+                metrics: calculateMetrics(state.items)
+            });
         case "/explorer":
             return renderExplorerPage();
-        case "/services":
-            return renderServicesPage();
-        case "/reference-architectures":
-            return renderReferenceArchitecturesPage();
-        case "/security-compliance":
-            return renderSecurityCompliancePage();
-        case "/patterns":
-            return renderPatternsPage();
+        case "/paths":
+            return renderPathsPage();
         case "/method":
-            return renderMethodPage();
+            return renderMethodRoute({ copy: METHOD_PAGE_COPY });
         case "/workspace":
-            return renderPersonalWorkspacePage();
+            return renderWorkspacePage();
         default:
             return renderNotFoundPage();
     }
@@ -481,7 +490,7 @@ function renderSecurityCompliancePage() {
     `;
 }
 
-function renderTopbar(route) {
+function renderTopbarLegacy(route) {
     const navLinks = ROUTES.map((entry) => [
         "<button",
         `class="nav-link ${route.path === entry.path ? "is-active" : ""}"`,
@@ -664,159 +673,49 @@ function renderExplorerPage() {
     const filters = currentExplorerFilters();
     const filteredItems = filterItems(state.items, filters);
     const selectedItem = selectedExplorerItem(filteredItems, filters.item);
-    const exportWarning = exportWarningText(state.exportOptions);
+    const summary = {
+        total: filteredItems.length,
+        highSeverity: filteredItems.filter((item) => item.severity === "High").length,
+        previewCount: filteredItems.filter((item) => item.maturity === "Preview").length,
+        defaultExportEligible: filterExportableItems(filteredItems, state.exportOptions).length
+    };
+    const presets = ARCHITECTURE_PATHS.map((path) => ({
+        label: path.presetLabel,
+        route: buildExplorerRoute(path.explorerFilters)
+    }));
 
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Review Catalog</p>
-                <div class="section-header">
-                    <div>
-                        <h1 class="hero-title">Explore the review catalog by service, maturity, and risk.</h1>
-                        <p class="hero-copy">This is the main public action. Browse the service posture, inspect sources, save local-only notes, and add items to your personal workspace.</p>
-                    </div>
-                    <div class="pill-row">
-                        <span class="chip public">Open access</span>
-                        <span class="chip ${filteredItems.some((item) => item.maturity === "Preview") ? "preview" : "ga-ready"}">${filteredItems.length} results</span>
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel">
-                <div class="toolbar">
-                    <div>
-                        <h2 class="section-title">Sample export</h2>
-                        <p class="section-copy">Download the current filtered review pack as Markdown or CSV. Default export is GA-ready only. Advisory and preview content require explicit inclusion.</p>
-                    </div>
-                    <div class="hero-actions">
-                        <button class="button-secondary" data-action="toggle-export">
-                            ${state.exportPanelOpen ? "Hide export options" : "Show export options"}
-                        </button>
-                        <button class="button" data-action="download-export" data-export-format="markdown">Download Markdown</button>
-                        <button class="button-secondary" data-action="download-export" data-export-format="csv">Download CSV</button>
-                    </div>
-                </div>
-                ${state.exportPanelOpen ? `
-                    <div class="export-panel">
-                        <label class="filter-chip-row">
-                            <input type="checkbox" data-export-option="includeAdvisory" ${state.exportOptions.includeAdvisory ? "checked" : ""}>
-                            Include advisory content
-                        </label>
-                        <label class="filter-chip-row">
-                            <input type="checkbox" data-export-option="includePreview" ${state.exportOptions.includePreview ? "checked" : ""}>
-                            Include preview content
-                        </label>
-                        <label class="filter-chip-row">
-                            <input type="checkbox" data-export-option="includeNotes" ${state.exportOptions.includeNotes ? "checked" : ""}>
-                            Include local notes
-                        </label>
-                        <div class="warning-callout">${escapeHtml(exportWarning)}</div>
-                    </div>
-                ` : ""}
-            </section>
-
-            <section class="detail-grid">
-                <aside class="panel filter-panel" aria-label="Explorer filters">
-                    <div class="filter-group">
-                        <label for="search">Search</label>
-                        <input id="search" class="input" type="search" name="q" value="${escapeHtml(filters.q)}" placeholder="Search service, tag, or guidance">
-                    </div>
-                    <div class="filter-group">
-                        <label for="serviceFamily">Service family</label>
-                        <select id="serviceFamily" class="select" name="family">
-                            ${renderSelectOptions("All families", state.families, filters.family)}
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="serviceName">Service</label>
-                        <select id="serviceName" class="select" name="service">
-                            ${renderSelectOptions("All services", state.services, filters.service)}
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="category">Category</label>
-                        <select id="category" class="select" name="category">
-                            ${renderSelectOptions("All categories", state.categories, filters.category)}
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <span class="field-label">Maturity</span>
-                        ${renderCheckboxGroup("maturity", Object.keys(MATURITY_CONFIG), filters.maturity)}
-                    </div>
-                    <div class="filter-group">
-                        <span class="field-label">Severity</span>
-                        ${renderCheckboxGroup("severity", Object.keys(SEVERITY_CONFIG), filters.severity)}
-                    </div>
-                    <button class="button-quiet" data-action="reset-filters">Reset filters</button>
-                </aside>
-
-                <section class="panel">
-                    <div class="section-header">
-                        <div>
-                            <p class="eyebrow">Results</p>
-                            <h2 class="section-title">${filteredItems.length ? `${filteredItems.length} review items` : "No matching items"}</h2>
-                            <p class="section-copy">Preview items are visually distinct and remain out of the default export baseline.</p>
-                        </div>
-                    </div>
-                    ${filteredItems.length ? `
-                        <div class="review-list">
-                            ${filteredItems.map((item) => renderReviewCard(item, selectedItem?.id === item.id)).join("")}
-                        </div>
-                    ` : `
-                        <div class="empty-state">
-                            <div>
-                                <h3>No review items match this filter set.</h3>
-                                <p class="section-copy">Remove a service or maturity filter, or reset the explorer to the default GA-first posture.</p>
-                            </div>
-                        </div>
-                    `}
-                </section>
-
-                <aside class="detail-panel" aria-label="Review detail">
-                    ${selectedItem ? renderDetailPanel(selectedItem) : `
-                        <div class="empty-state">
-                            <div>
-                                <h3>Select a review item.</h3>
-                                <p class="section-copy">The detail panel shows guardrails, source traceability, notes, and export posture for the selected service.</p>
-                            </div>
-                        </div>
-                    `}
-                </aside>
-            </section>
-        </main>
-    `;
+    return renderExplorerRoute({
+        header: {
+            eyebrow: "Review Catalog",
+            title: "Explore the catalog by service, maturity, and risk.",
+            body: "Review source-backed guidance, compare maturity, and add items to your workspace."
+        },
+        presets,
+        summary,
+        exportPanelOpen: state.exportPanelOpen,
+        exportOptions: state.exportOptions,
+        exportWarning: exportWarningText(state.exportOptions),
+        filters,
+        items: filteredItems,
+        selectedItem,
+        families: state.families,
+        services: state.services,
+        categories: state.categories,
+        maturityConfig: MATURITY_CONFIG,
+        severityConfig: SEVERITY_CONFIG,
+        inWorkspace: isInWorkspace
+    });
 }
 
-function renderServicesPage() {
-    const serviceCards = state.items.map((item) => `
-        <article class="service-card">
-            <div class="pill-row">
-                <span class="chip ${MATURITY_CONFIG[item.maturity].tone}">${escapeHtml(item.maturity)}</span>
-                <span class="chip ${SEVERITY_CONFIG[item.severity].tone}">${escapeHtml(item.severity)}</span>
-            </div>
-            <h2 class="service-title">${escapeHtml(item.serviceName)}</h2>
-            <p class="section-copy">${escapeHtml(item.summary)}</p>
-            <p class="meta-copy">${escapeHtml(item.serviceFamily)} · ${escapeHtml(item.category)}</p>
-            <div class="hero-actions">
-                <button class="button-quiet" data-route="/explorer?service=${encodeURIComponent(item.serviceName)}&item=${encodeURIComponent(item.id)}">Open in explorer</button>
-            </div>
-        </article>
-    `).join("");
+function renderPathsPage() {
+    const pathState = currentPathSelection();
+    const pathOptions = filteredArchitecturePaths(pathState.type);
+    const selectedPath = selectArchitecturePath(pathOptions, pathState.path);
 
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Service catalog</p>
-                <h1 class="hero-title">Service-first navigation.</h1>
-                <p class="hero-copy">This page exists to get users into the explorer quickly. Each card opens the detailed review posture for one Azure service or platform surface.</p>
-            </section>
-            <section class="section">
-                <div class="service-grid">
-                    ${serviceCards}
-                </div>
-            </section>
-        </main>
-    `;
+    return renderArchitecturePathsRoute({
+        paths: pathOptions,
+        selectedPath
+    });
 }
 
 function renderMethodPage() {
@@ -843,111 +742,17 @@ function renderMethodPage() {
     `;
 }
 
-function renderPersonalWorkspacePage() {
+function renderWorkspacePage() {
     const items = selectedWorkspaceItems();
     const summary = workspaceSummary(items);
 
-    return `
-        <main id="main" class="page">
-            <section class="page-hero">
-                <p class="eyebrow">Personal Workspace</p>
-                <div class="section-header">
-                    <div>
-                        <h1 class="hero-title">Build and export your review pack.</h1>
-                        <p class="hero-copy">Capture notes, keep a shortlist of services, and export a review pack from this browser. No sign-in. No shared records.</p>
-                    </div>
-                    <div class="hero-actions">
-                        <button class="button" data-action="workspace-export" data-export-format="markdown">Export Markdown</button>
-                        <button class="button-secondary" data-action="workspace-export" data-export-format="csv">Export CSV</button>
-                        <button class="button-secondary" data-action="workspace-export" data-export-format="json">Export JSON</button>
-                        <button class="button-secondary" data-action="import-workspace">Import JSON</button>
-                        <button class="button-quiet" data-action="clear-workspace">Clear workspace</button>
-                    </div>
-                </div>
-                <p class="meta-copy">Your workspace is stored locally in this browser. Export JSON if you want to keep a portable copy of your notes and shortlist.</p>
-            </section>
-
-            <section class="metrics-grid">
-                ${renderMetricCard("Selected items", summary.itemCount, "Services currently included in this review pack.")}
-                ${renderMetricCard("Notes captured", summary.noteCount, "Global notes plus item notes with content in this workspace.")}
-                ${renderMetricCard("Maturity mix", summary.maturityMix, "Visible summary of the selected review posture.")}
-                ${renderMetricCard("Last updated", summary.lastUpdated, "Updated when the shortlist, notes, or workspace details change.")}
-            </section>
-
-            <section class="workspace-shell">
-                <section class="panel">
-                    <div class="section-header">
-                        <div>
-                            <p class="eyebrow">Selected items</p>
-                            <h2 class="section-title">${items.length ? "Current review pack" : "No items added yet"}</h2>
-                            <p class="section-copy">${items.length ? "Use Explorer to add or remove services as you shape the review pack." : "Start in Explorer and add services to your workspace."}</p>
-                        </div>
-                    </div>
-                    ${items.length ? `
-                        <div class="workspace-item-list">
-                            ${items.map((item) => renderWorkspaceItem(item)).join("")}
-                        </div>
-                    ` : `
-                        <div class="empty-state">
-                            <div>
-                                <h3>No items added yet.</h3>
-                                <p class="section-copy">Start in Explorer and add services to your workspace.</p>
-                                <button class="button" data-route="/explorer">Open Explorer</button>
-                            </div>
-                        </div>
-                    `}
-                </section>
-
-                <aside class="panel workspace-sidebar">
-                    <div class="filter-group">
-                        <label for="workspaceName">Workspace name</label>
-                        <input
-                            id="workspaceName"
-                            class="input"
-                            type="text"
-                            data-workspace-field="name"
-                            value="${escapeHtml(state.workspace.name)}"
-                            placeholder="${DEFAULT_WORKSPACE_NAME}"
-                        >
-                    </div>
-                    <div class="filter-group">
-                        <label for="workspaceNotes">Workspace notes</label>
-                        <textarea
-                            id="workspaceNotes"
-                            class="textarea"
-                            data-workspace-field="globalNotes"
-                            placeholder="Capture the overall scope, assumptions, or leadership context for this review pack."
-                        >${escapeHtml(state.workspace.globalNotes)}</textarea>
-                    </div>
-                    <div class="info-callout">
-                        Exports include your selected items, item notes, workspace notes, and current maturity posture. Use JSON export and import if you want to move this workspace between browsers.
-                    </div>
-                </aside>
-            </section>
-
-            <section class="panel">
-                <div class="section-header">
-                    <div>
-                        <p class="eyebrow">Item notes</p>
-                        <h2 class="section-title">Service-by-service notes</h2>
-                    </div>
-                </div>
-                ${items.length ? `
-                    <div class="workspace-note-grid">
-                        ${items.map((item) => renderWorkspaceNoteCard(item)).join("")}
-                    </div>
-                ` : `
-                    <div class="empty-state">
-                        <div>
-                            <h3>No item notes to capture yet.</h3>
-                            <p class="section-copy">Add services to your workspace first. Their local notes will appear here for quick editing and export.</p>
-                        </div>
-                    </div>
-                `}
-            </section>
-            <input hidden type="file" accept="application/json" data-workspace-import>
-        </main>
-    `;
+    return renderWorkspaceRoute({
+        copy: WORKSPACE_COPY,
+        workspace: state.workspace,
+        items,
+        summary,
+        exportOptions: state.exportOptions
+    });
 }
 
 function renderNotFoundPage() {
@@ -964,7 +769,7 @@ function renderNotFoundPage() {
     `;
 }
 
-function renderFooter() {
+function renderFooterLegacy() {
     return `
         <footer class="footer">
             <p class="footer-note">
@@ -1411,12 +1216,21 @@ function currentExplorerFilters() {
     };
 }
 
+function currentPathSelection() {
+    const params = new URLSearchParams(window.location.search);
+
+    return {
+        type: cleanValue(params.get("type")),
+        path: cleanValue(params.get("path"))
+    };
+}
+
 function selectedExplorerItem(filteredItems, requestedId) {
-    if (!filteredItems.length) {
+    if (!filteredItems.length || !requestedId) {
         return null;
     }
 
-    return filteredItems.find((item) => item.id === requestedId) || filteredItems[0];
+    return filteredItems.find((item) => item.id === requestedId) || null;
 }
 
 function filterItems(items, filters) {
@@ -1440,6 +1254,40 @@ function filterItems(items, filters) {
 
         return matchesQuery && matchesFamily && matchesService && matchesCategory && matchesMaturity && matchesSeverity;
     });
+}
+
+function buildExplorerRoute(filters = {}) {
+    const params = new URLSearchParams();
+
+    if (filters.q) params.set("q", filters.q);
+    if (filters.family) params.set("family", filters.family);
+    if (filters.service) params.set("service", filters.service);
+    if (filters.category) params.set("category", filters.category);
+    (filters.maturity || []).forEach((value) => params.append("maturity", value));
+    (filters.severity || []).forEach((value) => params.append("severity", value));
+
+    return params.toString() ? `/explorer?${params.toString()}` : "/explorer";
+}
+
+function filteredArchitecturePaths(type) {
+    const matching = type
+        ? ARCHITECTURE_PATHS.filter((path) => path.type === type)
+        : ARCHITECTURE_PATHS;
+
+    const available = matching.length ? matching : ARCHITECTURE_PATHS;
+
+    return available.map((path) => ({
+        ...path,
+        explorerRoute: buildExplorerRoute(path.explorerFilters)
+    }));
+}
+
+function selectArchitecturePath(paths, requestedId) {
+    if (!paths.length) {
+        return null;
+    }
+
+    return paths.find((path) => path.id === requestedId) || paths[0];
 }
 
 function updateExplorerUrl(filters, push = false) {
@@ -1479,7 +1327,8 @@ function calculateMetrics(items) {
         totalItems: items.length,
         gaReady: items.filter((item) => item.maturity === "GA-ready").length,
         advisory: items.filter((item) => item.maturity === "Advisory").length,
-        preview: items.filter((item) => item.maturity === "Preview").length
+        preview: items.filter((item) => item.maturity === "Preview").length,
+        highSeverity: items.filter((item) => item.severity === "High").length
     };
 }
 
@@ -1515,6 +1364,24 @@ function exportWarningText(options) {
     }
 
     return "Default sample export remains GA-ready only.";
+}
+
+function filterExportableItems(items, options) {
+    return items.filter((item) => {
+        if (item.maturity === "GA-ready") {
+            return true;
+        }
+
+        if (item.maturity === "Advisory") {
+            return options.includeAdvisory;
+        }
+
+        if (item.maturity === "Preview") {
+            return options.includePreview;
+        }
+
+        return false;
+    });
 }
 
 function selectedWorkspaceItems() {
@@ -1567,21 +1434,7 @@ function workspaceSummary(items) {
 
 function handleExportDownload(format = "markdown") {
     const filters = currentExplorerFilters();
-    const filteredItems = filterItems(state.items, filters).filter((item) => {
-        if (item.maturity === "GA-ready") {
-            return true;
-        }
-
-        if (item.maturity === "Advisory") {
-            return state.exportOptions.includeAdvisory;
-        }
-
-        if (item.maturity === "Preview") {
-            return state.exportOptions.includePreview;
-        }
-
-        return false;
-    });
+    const filteredItems = filterExportableItems(filterItems(state.items, filters), state.exportOptions);
 
     const selectedItems = filteredItems.map((item) => ({
         ...item,
@@ -1590,7 +1443,7 @@ function handleExportDownload(format = "markdown") {
 
     const exportPayload = {
         productName: PRODUCT.name,
-        modeLabel: "Review Surface",
+        modeLabel: "Review Catalog",
         items: selectedItems,
         filters,
         options: state.exportOptions,
@@ -1608,24 +1461,23 @@ function handleExportDownload(format = "markdown") {
 }
 
 function handleWorkspaceExport(format = "markdown") {
-    const items = selectedWorkspaceItems();
+    const items = filterExportableItems(selectedWorkspaceItems(), state.exportOptions);
 
     if (!items.length) {
-        window.alert("Add at least one service to Personal Workspace before exporting.");
+        window.alert("Add at least one export-eligible item to Workspace before exporting.");
         return;
     }
 
     const exportPayload = {
         productName: PRODUCT.name,
-        modeLabel: "Personal Workspace",
+        modeLabel: "Workspace",
         items,
         filters: {
             workspace: state.workspace.name,
-            source: "Personal Workspace"
+            source: "Workspace"
         },
         options: {
-            ...state.exportOptions,
-            includeNotes: true
+            ...state.exportOptions
         },
         generatedAt: new Date(),
         workspaceName: state.workspace.name,
@@ -1656,20 +1508,6 @@ function handleWorkspaceExport(format = "markdown") {
 
     const markdown = buildMarkdownExport(exportPayload);
     downloadTextFile("azure-review-board-workspace.md", markdown, "text/markdown;charset=utf-8");
-}
-
-function hydrateExplorerSelection(route) {
-    if (route.path !== "/explorer") {
-        return;
-    }
-
-    const filters = currentExplorerFilters();
-    const filteredItems = filterItems(state.items, filters);
-
-    if (filteredItems.length && !filters.item) {
-        filters.item = filteredItems[0].id;
-        updateExplorerUrl(filters, false);
-    }
 }
 
 function loadNotes() {

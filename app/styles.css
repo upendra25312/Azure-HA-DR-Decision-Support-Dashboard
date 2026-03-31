@@ -195,6 +195,10 @@ textarea {
 .method-grid,
 .metrics-grid,
 .hero-grid,
+.trust-strip,
+.path-grid,
+.summary-band,
+.step-strip,
 .card-grid,
 .service-grid,
 .checklist-grid,
@@ -240,6 +244,10 @@ textarea {
     align-items: start;
 }
 
+.hero-grid--single {
+    grid-template-columns: 1fr;
+}
+
 .card-grid,
 .workspace-grid,
 .governed-grid,
@@ -252,8 +260,17 @@ textarea {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.trust-strip,
+.summary-band {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .service-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.path-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .checklist-grid {
@@ -279,6 +296,15 @@ textarea {
     font-size: clamp(2.6rem, 4.7vw, 4.4rem);
     line-height: 0.98;
     max-width: 12ch;
+}
+
+.hero-title--wide {
+    max-width: 16ch;
+}
+
+.hero-title--compact {
+    max-width: 16ch;
+    font-size: clamp(2.3rem, 4vw, 3.5rem);
 }
 
 .section-title {
@@ -344,21 +370,38 @@ textarea {
 
 .mode-card,
 .trust-card,
+.path-card,
 .governed-card,
 .workspace-item-card,
 .workspace-note-card,
 .method-card,
-.stat-card {
+.stat-card,
+.step-card {
     padding: 1.2rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--line);
     background: var(--surface-strong);
 }
 
+.path-card {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.path-card.is-selected {
+    border-color: var(--brand-strong);
+    box-shadow: 0 12px 32px rgba(15, 94, 166, 0.16);
+}
+
 .stat-value {
     font-size: clamp(1.9rem, 2.6vw, 2.8rem);
     font-weight: 700;
     color: var(--text);
+}
+
+.stat-value--compact {
+    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+    line-height: 1.35;
 }
 
 .stat-note {
@@ -508,11 +551,27 @@ textarea {
     justify-content: space-between;
 }
 
+.preset-strip {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
 .export-panel {
     padding: 1rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--line);
     background: var(--surface-muted);
+}
+
+.step-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.step-card {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
 }
 
 .warning-callout,
@@ -574,6 +633,10 @@ textarea {
     .hero-grid,
     .workspace-shell,
     .detail-grid,
+    .summary-band,
+    .trust-strip,
+    .path-grid,
+    .step-strip,
     .service-grid,
     .checklist-grid {
         grid-template-columns: 1fr;
@@ -606,6 +669,10 @@ textarea {
 
     .card-grid,
     .metrics-grid,
+    .trust-strip,
+    .summary-band,
+    .path-grid,
+    .step-strip,
     .field-row,
     .workspace-grid,
     .governed-grid,
